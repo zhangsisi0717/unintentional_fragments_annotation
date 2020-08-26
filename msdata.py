@@ -396,22 +396,26 @@ class MSData:
         self._rts_raw: np.ndarray = np.copy(rts)  # raw retention time
         self._rts: np.ndarray = np.copy(rts)  # smoothed retention time
 
+
         self._rts_raw_intercept, self._rts_raw_slope, rel = self.line_model(self._rts_raw)
         if rel > self.options.slope_err_tol:
-            msg = "non-uniform retention time: difference has a relative error of {:.2E}".format(rel)
-            warnings.warn(msg)
-
-        self._rts_intercept = self._rts_raw_intercept
-        self._rts_slope = self._rts_raw_slope
-
+            msg = "Warning: non-uniform scanning interval: difference has a relative error of {:.2E}".format(rel)
+            print(msg)
+            uniform_rts, interp_ints = self.rts_interp_model(self._rts_raw,ints)
+            self._non_uni_rts_raw = np.copy(rts)
+            self._rts_raw = uniform_rts
+            self._rts_raw_intercept, self._rts_raw_slope, rel = self.line_model(self._rts_raw)
+            self._ints_raw = interp_ints
+            self._non_uni_ints_raw = np.copy(ints)
+        else:
+            self._ints_raw: np.ndarray = np.copy(ints)  # raw intensity, not smoothed, uses abs index
+            self._ints_sm_raw: np.ndarray = np.copy(ints)  # smoothed but not re-ordered, i.e., uses abs index for feature
+            self._ints: np.ndarray = np.copy(ints)
+        # re-ordered and smoothed intensity, i.e., use relative index for feature
         self._mzs_raw: np.ndarray = np.copy(mzs)  # raw mz
         self._mzs: np.ndarray = np.copy(mzs)  # re-ordered mz
-
-        self._ints_raw: np.ndarray = np.copy(ints)  # raw intensity, not smoothed, uses abs index
-        self._ints_sm_raw: np.ndarray = np.copy(ints)  # smoothed but not re-ordered, i.e., uses abs index for feature
-        self._ints: np.ndarray = np.copy(ints)
-        # re-ordered and smoothed intensity, i.e., use relative index for feature
-
+        self._rts_intercept = self._rts_raw_intercept
+        self._rts_slope = self._rts_raw_slope
         self._df: pd.DataFrame = df  # metadata data frame
         self._df['id'] = self._df.index.copy()
 
@@ -442,6 +446,17 @@ class MSData:
         rel_err = delta_range / delta_mean
 
         return x[0], delta.mean(), rel_err
+
+    @staticmethod
+    def rts_interp_model(rts_raw: np.ndarray,ints_raw: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
+        delta = rts_raw[1:] - rts_raw[:-1]
+        delta_mean = delta.mean()
+        uniform_rt = np.arange(start=rts_raw[0], stop=rts_raw[-1] + delta_mean, step=delta_mean)
+        interp_ints = np.interp(uniform_rt, rts_raw, ints_raw[0])
+        for i in tqdm(range(1, ints_raw.shape[0]), desc='Starting interpolating:'):
+            temp_ints = np.interp(uniform_rt, rts_raw, ints_raw[i])
+            interp_ints = np.vstack((interp_ints, temp_ints))
+        return uniform_rt, interp_ints
 
     @property
     def order(self) -> np.ndarray:
@@ -482,6 +497,14 @@ class MSData:
     @property
     def df_raw(self) -> pd.DataFrame:
         return self._df
+
+    @property
+    def non_uni_rts_raw(self) -> np.ndarray:
+        return self._non_uni_rts_raw
+
+    @property
+    def non_uni_ints_raw(self) -> np.ndarray:
+        return self._non_uni_ints_raw
 
     def absolute_index(self, index: Union[int, Iterable[int]], ordered: bool = True) -> np.ndarray:
 
