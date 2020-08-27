@@ -174,7 +174,7 @@ class IROA_db:
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
                    transform: Optional[Callable[[float], float]] = None,
-                    save_matched_mz=False,
+                   save_matched_mz=False,
                    reset_matched_idx_mz=True) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):

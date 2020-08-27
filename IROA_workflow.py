@@ -31,4 +31,4 @@ for c in tqdm(iroa.compounds_list, desc="processing compounds"):
 # with open(file,'wb') as f:
 #     pkl.dump(a,f,protocol=pkl.HIGHEST_PROTOCOL)
 
-re = iroa.find_match(target=glc,save_matched_mz=True)
+# re = iroa.find_match(target=glc,save_matched_mz=True)

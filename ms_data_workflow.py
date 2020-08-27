@@ -1,4 +1,5 @@
 from msdata import *
+# from IROA_IDX import *
 
 ##dire:/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3 #
 m = MSData.from_files('IROA_ms1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/IROA_ms1_neg')
@@ -58,5 +59,7 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 for v in m.base_info.values():
     print(v)
 
-###find_match and plot###
-
+###check base group and find_match and plot###
+spec = m.base_info[m.base_index[0]].spectrum
+iroa_re = iroa.find_match(target=spec,save_matched_mz=True,transform=math.sqrt) ##compare with iroa database
+iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match

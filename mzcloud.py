@@ -676,7 +676,9 @@ class MZCloud:
                    threshold: float = 1E-3,
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
-                   transform: Optional[Callable[[float], float]] = None
+                   transform: Optional[Callable[[float], float]] = None,
+                   save_matched_mz=False,
+                   reset_matched_idx_mz=True
                    ) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
@@ -698,7 +700,9 @@ class MZCloud:
             for t in c.spectra_1 + c.spectra_2:
                 for s in t:
                     if s.Polarity == mode:
-                        cos = s.bin_vec.cos(target.bin_vec, transform=transform)
+                        cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
+                                            save_matched_mz=save_matched_mz,
+                                            reset_matched_idx_mz=reset_matched_idx_mz)
                         if cos > cos_threshold:
                             res.append((c, s, cos))
         res.sort(key=lambda x: x[2], reverse=True)

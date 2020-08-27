@@ -183,7 +183,8 @@ class MonaDatabase:
                    rela_threshold: float = 1E-2,
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
-                   transform: Optional[Callable[[float], float]] = None
+                   transform: Optional[Callable[[float], float]] = None, save_matched_mz=False,
+                   reset_matched_idx_mz=True
                    ) -> List[Tuple[MonaCompounds, MonaSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
@@ -203,7 +204,9 @@ class MonaDatabase:
         res = []
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
             for s in c.spectra_1 + c.spectra_2:
-                cos = s.bin_vec.cos(target.bin_vec, transform=transform)
+                cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
+                                    save_matched_mz=save_matched_mz,
+                                    reset_matched_idx_mz=reset_matched_idx_mz)
                 if cos > cos_threshold:
                     res.append((c, s, cos))
 

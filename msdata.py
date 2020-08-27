@@ -110,9 +110,9 @@ class PeakDecompositionResults:
     mse: Optional[Numeric] = field(default=None, repr=False)
     rt_range: Optional[Tuple[Numeric, Numeric]] = field(default=None, repr=False)
     status: Optional[int] = None
-    v: Optional[np.ndarray] = field(default=None, repr=False)
-    v_max: Optional[Numeric] = field(default=None, repr=False)
-    v_recons: Optional[np.ndarray] = field(default=None, repr=False)
+    v: Optional[np.ndarray] = field(default=None, repr=False)  #normalized_vector
+    v_max: Optional[Numeric] = field(default=None, repr=False)  #max of absolute intensity of the vector
+    v_recons: Optional[np.ndarray] = field(default=None, repr=False)  #reconstructed vector by using normalized basis
 
 @dataclass
 class Spectrum:
@@ -256,9 +256,45 @@ class Spectrum:
             warnings.warn(msg)
             return None, None, None
 
+
 @dataclass
 class ReconstructedSpectrum(Spectrum):
     spectrum_label: str = tuple(['Reconstructed','Reference'])
+    spectrum_list_abs: Optional[List[tuple]] = field(default_factory=list,repr=False)
+    intensity_abs_recon: Optional[list] = field(default_factory=list,repr=False)
+    matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
+    mis_matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.spectrum_list_abs:
+            self.intensity_abs_recon = [j for _,j in self.spectrum_list_abs]
+            self.bin_vec = BinnedSparseVector()
+            self.bin_vec.add(x=self.mz,y=self.relative_intensity,y_abs=self.intensity_abs_recon)
+
+    # def gen_subspectrum_postmatch(self,other:Union[Spectrum]):
+    #     if other.matched
+
+    # def check_adduction_list(self):
+    def gen_matched_mz(self,other:[Spectrum],reset_matched_mz=True):
+        if reset_matched_mz:
+            self.matched_mz = []
+            self.mis_matched_mz = []
+        recon_matched_mz = []
+        recon_mis_matched_mz = []
+        if other.bin_vec.matched_idx_mz:
+            for idx in other.bin_vec.matched_idx_mz['matched_idx']:
+                for mz, idx_int in self.bin_vec.mz_idx_dic:
+                    if idx_int[0] == idx:
+                        recon_matched_mz.append((mz,idx_int[1]))
+                    else:
+                        recon_mis_matched_mz.append((mz,idx_int[1]))
+
+            self.matched_mz = recon_matched_mz
+            self.mis_matched_mz = recon_mis_matched_mz
+
+
+
 
 @dataclass
 class BaseProperties:
@@ -272,8 +308,8 @@ class BaseProperties:
     n_overlaps: Optional[Int] = field(default=None, repr=False)
     rt: Optional[Float] = field(default=None, repr=False)
     sin: Optional[Float] = field(default=None, repr=False)
-    v: Optional[np.ndarray] = field(default=None, repr=False)
-    v_max: Optional[Float] = field(default=None, repr=False)
+    v: Optional[np.ndarray] = field(default=None, repr=False) #normalized basis
+    v_max: Optional[Float] = field(default=None, repr=False) #max ints of the orginal basis vector
 
     cos_sim: Optional[Float] = field(default=None, repr=False)
 
@@ -1372,6 +1408,7 @@ class MSData:
                              max_mse: float = 1E-2, max_rt_diff: float = .5,
                              min_cos: float = 0.9,
                              save: bool = True, load: bool = True) -> np.ndarray:
+        ##return:normalized coefficient of the basis
 
         if base_index < 0 or base_index >= self.n_base:  # index out of range
             raise ValueError
@@ -1389,6 +1426,7 @@ class MSData:
         # note that the first element in c vector corresponds to const term, hence +1
 
         coefficient = np.zeros(shape=self.n_feature)  # initialize as zero
+        abs_coefficient = np.zeros(shape=self.n_feature)
 
         for idx in range(self.n_feature):
             # both are relative index
@@ -1416,8 +1454,12 @@ class MSData:
                 continue
 
             coefficient[idx] = v_max * c[c_idx]
+            #v_max:the max intens of a certain feature,
+            #c : decompose_info.c of a certain feature
+            #c_idx:idx of coefficient of the self.basis
 
         if len(coefficient) > 0 and np.max(coefficient) > 0.:
+            abs_coefficient = np.copy(coefficient)
             coefficient /= np.max(coefficient)
 
         coefficient[coefficient < threshold] = 0.
@@ -1431,7 +1473,7 @@ class MSData:
             base_info.n_components = n_components
             base_info.min_cos = min_cos
 
-        return coefficient
+        return coefficient,abs_coefficient
 
     def plot_coelution(self, base_index: int, dpi: Optional[float] = None,
                        figsize: Optional[Tuple[Numeric, Numeric]] = None,
@@ -1473,7 +1515,7 @@ class MSData:
             xlim = (max(self.rts[0], base_range[0] - xlim_delta_rt),
                     min(self.rts[-1], base_range[1] + xlim_delta_rt))
 
-        coefficient = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
+        coefficient, coefficient_abs = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
                                                 max_mse=max_mse, max_rt_diff=max_rt_diff,
                                                 min_cos=min_cos,
                                                 save=save, load=load)
@@ -1547,7 +1589,7 @@ class MSData:
 
         else:
 
-            coefficient = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
+            coefficient, abs_coefficient = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
                                                     max_mse=max_mse, max_rt_diff=max_rt_diff,
                                                     min_cos=min_cos,
                                                     save=save, load=load)
@@ -1555,14 +1597,17 @@ class MSData:
             base_info.mz_upperbound = mz_upperbound
 
             spectrum_list = [(self.df.iloc[i].mz, v) for i, v in enumerate(coefficient) if v > 0.]
+            spectrum_list_abs = [(self.df.iloc[i].mz, v) for i, v in enumerate(abs_coefficient) if v > 0.]
             spectrum_list.sort(key=lambda x: x[0])
+            spectrum_list_abs.sort(key=lambda x:x[0])
 
             arg_max = np.argmax(coefficient)
             arg_max_mz = self.mzs[arg_max, :].mean()
 
             spectrum_list = [(mz, intensity) for mz, intensity in spectrum_list if mz <= arg_max_mz + mz_upperbound]
+            spectrum_list_abs = [(mz, intensity) for mz, intensity in spectrum_list_abs if mz <= arg_max_mz + mz_upperbound]
 
-            spectrum = ReconstructedSpectrum(spectrum_list=spectrum_list)
+            spectrum = ReconstructedSpectrum(spectrum_list=spectrum_list, spectrum_list_abs=spectrum_list_abs)
 
         if plot:
 
