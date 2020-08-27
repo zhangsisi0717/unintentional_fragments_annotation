@@ -5,6 +5,7 @@ m = MSData.from_files('IROA_ms1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Proj
 m.apply_smooth_conv(m.gaussian_kernel(4, 12), rt_range=(0., np.inf))
 
 m.perform_feature_peak_detection()
+# peak_detection_options = {}
 # by = np.zeros(m.n_feature)
 # res = m.get_peak_detection_results(index=np.arange(m.n_feature), ordered=False)
 # for i in range(m.n_feature):

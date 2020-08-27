@@ -19,4 +19,5 @@ for c in tqdm(mzc.compounds):
     if 'lucose' in c.CompoundName:
         lucose.append(c)
 
-glc = lucose[6].spectra_2[1][0]
+glc = lucose[6].spectra_2[1][1]
+re = iroa.find_match(target=glc,save_matched_mz=True,transform=math.sqrt)

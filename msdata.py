@@ -154,7 +154,7 @@ class Spectrum:
             self.arg_max_mz = self.mz[arg_max]
 
         self.bin_vec = BinnedSparseVector(ppm=self.bin_ppm)
-        self.bin_vec.add(x=self.mz, y=self.relative_intensity)
+        self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity)
 
     def compare_spectrum_plot(self, other,
                               dpi: Numeric = 200, figsize: Tuple[Numeric, Numeric] = (8, 6),
@@ -543,8 +543,11 @@ class MSData:
     def sort_feature(self, by: Optional[np.ndarray] = None, descending: bool = True) -> None:
         """
         sort the features (i.e. chromatograms)
-        :param by: the value used to perform the sorting; array-like with shape (self.n_feature,); if set to
-        None (default), will reset the order
+        only sort the order of self.mzs, self.ints, self._detection_results
+
+
+        :param by: the value used to perform the sorting; array-like with shape (self.n_feature,); if set to None (
+        default), will reset the order
         :param descending: if set to True (default), will sort by descending order
         :type descending: bool
         :return: None
@@ -635,7 +638,7 @@ class MSData:
                   dpi=None, figsize=None):
         """
         plot a peak
-        :param index: a single index indicating the feature
+        :param index: a single index indicating the feature, index = self.order[index]
         :type index: int
         :param rt_range:
         :param smooth:
@@ -1086,8 +1089,6 @@ class MSData:
         :param enable_tqdm:
         :return:
         """
-
-        # TODO: add cosine similarity criteria
 
         if hasattr(allowed_n_overlap, "__len__") and hasattr(allowed_n_overlap, "__getitem__"):
             if allowed_n_overlap[0] is not None:

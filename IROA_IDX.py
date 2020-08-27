@@ -173,8 +173,9 @@ class IROA_db:
                    rela_threshold: float = 1E-2,
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
-                   transform: Optional[Callable[[float], float]] = None
-                   ) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
+                   transform: Optional[Callable[[float], float]] = None,
+                    save_matched_mz=False,
+                   reset_matched_idx_mz=True) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
             raise ValueError("mode can only be 'Negative' or 'Positive'.")
@@ -192,9 +193,11 @@ class IROA_db:
 
         res = []
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
-            for s in c.Spectra_1 + c.Spectra_2:
+            for s in c.spectra_1 + c.spectra_2:
                 if s.Polarity == mode:
-                    cos = s.bin_vec.cos(target.bin_vec, transform=transform)
+                    cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
+                                        save_matched_mz=save_matched_mz,
+                                        reset_matched_idx_mz=reset_matched_idx_mz)
                     if cos > cos_threshold:
                         res.append((c, s, cos))
         res.sort(key=lambda x: x[2], reverse=True)
