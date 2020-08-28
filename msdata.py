@@ -264,6 +264,7 @@ class ReconstructedSpectrum(Spectrum):
     intensity_abs_recon: Optional[list] = field(default_factory=list,repr=False)
     matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
     mis_matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
+    matched_isotope_mz: Optional[dict] = field(default_factory=dict,repr=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -276,7 +277,7 @@ class ReconstructedSpectrum(Spectrum):
     #     if other.matched
 
     # def check_adduction_list(self):
-    def gen_matched_mz(self,other:[Spectrum],reset_matched_mz=True):
+    def gen_matched_mz(self, other:[Spectrum], reset_matched_mz=True):
         if reset_matched_mz:
             self.matched_mz = []
             self.mis_matched_mz = []
@@ -284,7 +285,7 @@ class ReconstructedSpectrum(Spectrum):
         recon_mis_matched_mz = []
         if other.bin_vec.matched_idx_mz:
             for idx in other.bin_vec.matched_idx_mz['matched_idx']:
-                for mz, idx_int in self.bin_vec.mz_idx_dic:
+                for mz, idx_int in self.bin_vec.mz_idx_dic.items():
                     if idx_int[0] == idx:
                         recon_matched_mz.append((mz,idx_int[1]))
                     else:
@@ -293,8 +294,28 @@ class ReconstructedSpectrum(Spectrum):
             self.matched_mz = recon_matched_mz
             self.mis_matched_mz = recon_mis_matched_mz
 
+        return recon_matched_mz, recon_mis_matched_mz
 
-
+    def check_isotope(self, ppm=30,reset=True):
+        if reset:
+            self.matched_isotope_mz = dict()
+        percen_thre = [0.20, 0.1, 0.05]
+        isotope_mz = dict()
+        if self.matched_mz:
+            for mz, intensity in self.matched_mz:  ##matched_mz
+                for mis_mz, mis_intensity in self.mis_matched_mz:  ##mis_matched_mz
+                    mz_13C = [mis_mz + 1.003354, mis_mz + 2 * 1.003354, mis_mz + 3 * 1.003354]
+                    for j in range(len(mz_13C)):
+                        if abs(mis_mz - mz_13C[j]) / mis_mz * 1E6 <= ppm * 2:
+                            if mis_intensity <= intensity * percen_thre[j]:
+                                if not isotope_mz.get((mis_mz, mis_intensity)):
+                                    isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
+                                else:
+                                    isotope_mz[(mis_mz, mis_intensity)].append((mz, intensity))
+                                self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                self.matched_mz.append((mis_mz, mis_intensity))
+        self.matched_isotope_mz = isotope_mz
+        return isotope_mz
 
 @dataclass
 class BaseProperties:
@@ -1404,12 +1425,11 @@ class MSData:
 
             self._decomposition_results[ft_idx] = decompose_info  # this line should be unnecessary
 
-    def spectrum_coefficient(self, base_index: int, threshold: float = 1E-2,
+    def spectrum_coefficient(self, base_index: int, threshold: float = 1E-2, ##or threshold = 1E-2
                              max_mse: float = 1E-2, max_rt_diff: float = .5,
                              min_cos: float = 0.9,
                              save: bool = True, load: bool = True) -> np.ndarray:
         ##return:normalized coefficient of the basis
-
         if base_index < 0 or base_index >= self.n_base:  # index out of range
             raise ValueError
 
@@ -1463,6 +1483,7 @@ class MSData:
             coefficient /= np.max(coefficient)
 
         coefficient[coefficient < threshold] = 0.
+        abs_coefficient[coefficient < threshold] = 0.
         n_components = np.sum(coefficient > 0.)
 
         if save:  # save
@@ -1574,7 +1595,7 @@ class MSData:
                      xlim: Optional[Union[str, Tuple[Numeric, Numeric]]] = 'auto',
                      xlim_delta_mz: float = 50.,
                      save: bool = True, load: bool = True,
-                     mz_upperbound: float = 5.,
+                     mz_upperbound: float = False,
                      ) -> ReconstructedSpectrum:
 
 
@@ -1593,11 +1614,13 @@ class MSData:
                                                     max_mse=max_mse, max_rt_diff=max_rt_diff,
                                                     min_cos=min_cos,
                                                     save=save, load=load)
+            n_coe = len([i for i in coefficient if i > 0])
+            n_abs_coe = len([i for i in abs_coefficient if i>0])
 
             base_info.mz_upperbound = mz_upperbound
-
             spectrum_list = [(self.df.iloc[i].mz, v) for i, v in enumerate(coefficient) if v > 0.]
             spectrum_list_abs = [(self.df.iloc[i].mz, v) for i, v in enumerate(abs_coefficient) if v > 0.]
+
             spectrum_list.sort(key=lambda x: x[0])
             spectrum_list_abs.sort(key=lambda x:x[0])
 

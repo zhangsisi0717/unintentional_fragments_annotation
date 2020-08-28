@@ -31,17 +31,17 @@ m.generate_base(reset=False, allowed_n_overlap=2, **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=3, **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=(4, None), **gen_base_opt)
 
-m.base_cos_similarity(plot=True)
-plt.show()
-
-m.base_rt_diff(plot=True)
-plt.show()
+# m.base_cos_similarity(plot=True)
+# plt.show()
+#
+# m.base_rt_diff(plot=True)
+# plt.show()
 
 
 m.perform_peak_decomposition(l1=1.)
 
 spec_params = dict(
-    threshold=1E-3,
+    threshold=1E-5,
     # threshold=0.,
     max_rt_diff=1.,
     # max_rt_diff=np.inf,
@@ -52,14 +52,17 @@ spec_params = dict(
     # min_cos=.99
     min_cos=0.
 )
-
+# m.gen_spectrum(0, plot=False, load=False, **spec_params)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)
 
 for v in m.base_info.values():
     print(v)
 
-###check base group and find_match and plot###
-spec = m.base_info[m.base_index[0]].spectrum
+###check base group and find_match within each group and plot###
+spec = m.base_info[m.base_index[2]].spectrum
 iroa_re = iroa.find_match(target=spec,save_matched_mz=True,transform=math.sqrt) ##compare with iroa database
 iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match
+spec.gen_matched_mz(other=iroa_re[0][1]) #generate matched_mz and mis_matched_mz to spec.matched_mz and spec.mis_matched_mz
+spec.check_isotope()
+
