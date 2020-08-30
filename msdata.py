@@ -265,6 +265,7 @@ class ReconstructedSpectrum(Spectrum):
     matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
     mis_matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
     matched_isotope_mz: Optional[dict] = field(default_factory=dict,repr=False)
+    matched_adduction: Optional[dict] = field(default_factory=dict,repr=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -316,6 +317,50 @@ class ReconstructedSpectrum(Spectrum):
                                 self.matched_mz.append((mis_mz, mis_intensity))
         self.matched_isotope_mz = isotope_mz
         return isotope_mz
+
+    def check_adduction_list(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
+                             reset: bool = True, mode: str = 'negative'):
+        ##exact_mass-adduction##
+        if reset:
+            self.matched_adduction = dict()
+        if molecular_weight:
+            adduction_list = {'positive': {'M+H-2H2O': (35.012788115999996, 1),
+                        'M+H-H2O': (17.00278811000001, 1),
+                          'M-H2O+NH4': (-0.022711889999982304, 1),
+                          'M+H': (-1.0073118899999827, 1),
+                          'M+Li': (-7.016011889999987, 1),
+                          'M+NH4': (-18.03381188999998, 1),
+                          'M+Na': (-22.989211890000007, 1),
+                          'M+CH3OH+H': (-33.03351189, 1),
+                          'M+K': (-38.96311188999999, 1),
+                          'M+ACN+H': (-42.03381188999998, 1),
+                          'M+2Na-H': (-44.97111189, 1),
+                          'M+ACN+Na': (-64.01581188999998, 1)},
+                        'negative': {'M-H':(1.0072881100000188, 1),
+                          'M+F': (-18.998411884000006, 1),
+                          'M-H2O-H': (-19.01838811600001, 1),
+                          'M+Na-2H': (-20.974711883999987, 1),
+                          'M+Cl': (-34.96941188400001, 1),
+                          'M+K-2H': (-36.948611884, 1),
+                          'M+FA-H': (-44.998211884, 1),
+                          'M+CH3COO': (-59.013811884000006, 1)}}
+
+
+            matched_adduction = dict()
+            if mode not in ('negative', 'positive'):
+                raise TypeError('mode must be negative or positive')
+            else:
+                for mis_mz in self.mis_matched_mz:
+                    for ad, mz in adduction_list[mode].items():
+                        if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
+                            matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
+                            self.matched_mz.append(mis_mz)
+                            self.mis_matched_mz.remove(mis_mz)
+                self.matched_adduction = matched_adduction
+        else:
+            raise warnings.warn('MolecularWeight is None!')
+
+    #TODO: add gen_sub_recon_spectrum method
 
 @dataclass
 class BaseProperties:

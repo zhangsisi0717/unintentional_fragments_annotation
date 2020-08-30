@@ -27,8 +27,8 @@ class MonaSpectrum(Spectrum):
     collision_energy: Optional[str] = field(default=None,repr=False)
     precursor: Optional[float] = field(default=None,repr=False)
     precursor_type: Optional[str] = field(default=None,repr=False)
-    def __post_init__(self):
-        super().__post_init__()
+    # def __post_init__(self):
+    #     super().__post_init__()
 
 #dict_keys(['spectrum_id', 'name', 'spectrum_list', 'InChI', 'InChIKey', 'molecular_formula', 'total_exact_mass',
 #\'ms_level', 'collision_energy', 'precursor', 'precursor_type'])

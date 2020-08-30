@@ -1,4 +1,5 @@
 from pathlib import Path
+import pickle as pkl
 import json
 from type_checking import *
 from dataclasses import dataclass, field, asdict
@@ -231,7 +232,8 @@ class MZCloudTree:
 class MZCloudCompound:
     Id: Optional[int] = field(default=None, repr=False)
     id: Optional[int] = field(default=None, repr=True, init=False)
-    n_trees: int = field(default=0, repr=True, init=False)
+    MolecularWeight: Optional[Numeric] = field(default=None, repr=False, init=None)
+    n_trees: int = field(default=0, repr=False, init=False)
     CompoundName: Optional[str] = None
     SystematicName: Optional[str] = field(default=None, repr=False)
     SearchCompoundName: Optional[str] = field(default=None, repr=False)
@@ -255,8 +257,6 @@ class MZCloudCompound:
     mzs_union: Optional[MZCollection] = field(default=None, repr=False, init=False)
     mz: Optional[float] = field(default=None, repr=False, init=False)
     MZC_env: Optional["MZCloud"] = field(default=None, repr=False)
-
-    # TODO: implement spectrum-level matching
 
     def __post_init__(self):
         self.id = self.Id
@@ -307,13 +307,13 @@ class MZCloudCompound:
 
         return self.MZC_env.get_precursor(compound=self, mode=mode, ppm=ppm, save=save)
 
-
-# TODO: implement MZCloudSpectrum and ReconstructedSpectrum as subclass of Spectrum
 @dataclass()
 class MZCloudSpectrum(Spectrum):
-    Spectrum_label: str = 'MZCloud'
+    Spectrum_label: str = field(default='MZCloud',repr=False)
+    mode:str = field(default=None,repr=False)
     Id: Optional[int] = field(default=None, repr=False)
     id: Optional[int] = field(default=None, repr=True, init=False)
+    MolecularWeight: Optional[Numeric] = field(default=None, repr=False, init=False)
     # Polarity: Optional[str] = None
     PrecursorPeaks: Optional[List] = field(default=None, repr=False)
     Postprocessing: Optional[str] = field(default=None, repr=False)
@@ -388,7 +388,7 @@ class MZCloudSpectrum(Spectrum):
 
                 # binned sparse vector
                 self.bin_vec = BinnedSparseVector(ppm=self.bin_ppm)
-                self.bin_vec.add(x=self.mz, y=self.relative_intensity)
+                self.bin_vec.add(x=self.mz, y=self.relative_intensity,y_abs=self.intensity)
 
 class MZCloud:
     @staticmethod
@@ -411,10 +411,12 @@ class MZCloud:
         self.ms2_path: Path = Path(root_dir) / "MS2"
 
         self.comp_metadata_path: Path = Path(root_dir) / "metadata.json"
+        self.mw_inchikey_map_path: Path = Path(root_dir) / "mw_inchikey_map.pkl"
 
         self.ms1_available: bool = self.ms1_path.is_dir()
         self.ms2_available: bool = self.ms2_path.is_dir()
         self.comp_metadata_available: bool = self.comp_metadata_path.is_file()
+        self.mw_inchikey_map_available: bool = self.mw_inchikey_map_path.is_file()
 
         self.compounds: Optional[List[MZCloudCompound]] = None
         self.compounds_dict: Optional[Dict[int, MZCloudCompound]] = None
@@ -564,6 +566,11 @@ class MZCloud:
             self.tree_to_spectra(tree=tree_id, ms_level=2, save=True)
 
     def read_comp_metadata(self) -> None:
+        if not self.mw_inchikey_map_available:
+            raise ValueError('mw_inchikey_map not available')
+
+        with open(self.mw_inchikey_map_path.as_posix(), 'rb') as f:
+            mw_inchi_map = pkl.load(f)
 
         if not self.comp_metadata_available:
             raise ValueError("metadata not available")
@@ -577,6 +584,7 @@ class MZCloud:
         self.tree_to_compounds_dict = dict()
 
         for c in self.compounds:
+            c.MolecularWeight = mw_inchi_map.get(c.InChIKey, None)
             self.compounds_dict[c.id] = c
             for t in c.tree_id:
                 self.tree_to_compounds_dict[t] = c
@@ -643,10 +651,14 @@ class MZCloud:
         mzs_2 = MZCollection(ppm=ppm)
 
         for s in spectra_1:
+            s.MolecularWeight = compound.MolecularWeight
+            s.ms_level = 'MS1'
             mz_array = s.mz[s.relative_intensity >= threshold]
             for mz in mz_array:
                 mzs_1.add(mz)
         for s in spectra_2:
+            s.MolecularWeight = compound.MolecularWeight
+            s.ms_level = 'MS2'
             mz_array = s.mz[s.relative_intensity >= threshold]
             for mz in mz_array:
                 mzs_2.add(mz)
@@ -677,7 +689,7 @@ class MZCloud:
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
                    transform: Optional[Callable[[float], float]] = None,
-                   save_matched_mz=False,
+                   save_matched_mz = True,
                    reset_matched_idx_mz=True
                    ) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 

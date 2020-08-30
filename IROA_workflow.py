@@ -2,7 +2,7 @@ from IROA_IDX import *
 
 # dire ='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA.db'
 
-dire = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_2.pkl'
+dire = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_final.pkl'
 iroa = IROA_db(dir=dire)
 iroa.read_file()
 for c in tqdm(iroa.compounds_list, desc="processing compounds"):

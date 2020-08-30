@@ -16,12 +16,15 @@ from mzcloud import *
 @dataclass
 class IROA_Spectrum(Spectrum):
     name: Optional[str] = field(default=None,repr=True)
-    ms_level: Optional[str] = field(default='2',repr=True)
+    ms_level: Optional[str] = field(default='MS2',repr=True)
     id: Optional[str] = field(default=None,repr=False)
     cpdID: Optional[str] = field(default=None,repr=False)
     Polarity: Optional[str] = field(default=None, repr=False)
     spectrum: Optional[dict] = field(default=None,repr=False)
     precursor : Optional[float] = field(default=None,repr=False)
+    MolecularWeight:Optional[Numeric] = field(default=None,repr=False)
+    InChIKey: Optional[str] = field(default=None, repr=False)
+
 
     def __post_init__(self):
         super().__post_init__()
@@ -59,6 +62,8 @@ class IROA_compounds:
     mzs_filtered: Optional[MZCollection] = field(default=None, repr=False, init=False)
     mzs_union: Optional[MZCollection] = field(default=None, repr=False, init=False)
     cpdID: Optional[str] = field(default=None,repr=False)
+    MolecularWeight:Optional[Numeric] = field(default=None,repr=False)
+    InChIKey: Optional[str] = field(default=None, repr=False)
 
 
     def add_spectra_1(self,spectra_1:IROA_Spectrum)->List[IROA_Spectrum]:
@@ -140,7 +145,9 @@ class IROA_db:
                 else: self.compounds_dic[neg_spec.name].append(neg_spec)
 
             for cmp_name, comp in tqdm(self.compounds_dic.items(),desc='Creating compound list'):
-                self.compounds_list.append(IROA_compounds(name=cmp_name,spectra_2=comp))
+                self.compounds_list.append(IROA_compounds(name=cmp_name,spectra_2=comp,
+                                                          MolecularWeight=comp[0].MolecularWeight,
+                                                          InChIKey=comp[0].InChIKey))
 
         else:
             raise warnings.warn('must input the directory of the pickle file')

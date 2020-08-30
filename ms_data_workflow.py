@@ -60,9 +60,22 @@ for v in m.base_info.values():
     print(v)
 
 ###check base group and find_match within each group and plot###
-spec = m.base_info[m.base_index[2]].spectrum
-iroa_re = iroa.find_match(target=spec,save_matched_mz=True,transform=math.sqrt) ##compare with iroa database
-iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match
+spec = m.base_info[m.base_index[6]].spectrum
+##################################search IROA_database###
+iroa_re = iroa.find_match(target=spec, save_matched_mz=True, transform=math.sqrt) ##compare with iroa database
+iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match in iroa
 spec.gen_matched_mz(other=iroa_re[0][1]) #generate matched_mz and mis_matched_mz to spec.matched_mz and spec.mis_matched_mz
 spec.check_isotope()
+spec.check_adduction_list(exact_mass=iroa_re[0][0].MolecularWeight)
+#####################search mzcloud database#######
+mzc_re = mzc.find_match(target=spec, save_matched_mz=True, transform=math.sqrt)
+mzc_re[0][1].bin_vec.matched_idx_mz
+spec.gen_matched_mz(other=mzc_re[0][1])
+spec.check_isotope()
+spec.check_adduction_list(exact_mass=mzc_re[0][0].MolecularWeight)
 
+######################search mona_database########
+mona_re = mona.find_match(target=spec, save_matched_mz=True, transform=math.sqrt)
+mona_re[0][1].bin_vec.matched_idx_mz
+spec.gen_matched_mz(other=mona_re[0][1]) ###generate matched_mz to
+spec.check_isotope()  ##check if there are other isotopope for matched_mz
