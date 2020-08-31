@@ -266,6 +266,8 @@ class ReconstructedSpectrum(Spectrum):
     mis_matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
     matched_isotope_mz: Optional[dict] = field(default_factory=dict,repr=False)
     matched_adduction: Optional[dict] = field(default_factory=dict,repr=False)
+    matched_multimer: Optional[dict] = field(default_factory=dict,repr=False)
+    sub_recon_spec: Optional[Spectrum] = field(default=None,repr=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -295,7 +297,7 @@ class ReconstructedSpectrum(Spectrum):
             self.matched_mz = recon_matched_mz
             self.mis_matched_mz = recon_mis_matched_mz
 
-        return recon_matched_mz, recon_mis_matched_mz
+        return recon_matched_mz
 
     def check_isotope(self, ppm=30,reset=True):
         if reset:
@@ -359,8 +361,44 @@ class ReconstructedSpectrum(Spectrum):
                 self.matched_adduction = matched_adduction
         else:
             raise warnings.warn('MolecularWeight is None!')
+        return self.matched_adduction
 
-    #TODO: add gen_sub_recon_spectrum method
+    def check_multimer(self,molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
+                       reset: bool = True, mode: str = 'negative'):
+        if reset:
+            self.matched_multimer = dict()
+        if mode not in ('negative', 'positive'):
+            raise TypeError('mode must be negative or positive')
+        else:
+            if mode == 'negative':
+                for mz,intensity in self.matched_mz:
+                    for mis_mz,mis_intensity in self.mis_matched_mz:
+                        if (abs(mz*2 + 1.0073118899999827 - mis_mz)/(mz*2 + 1.0073118899999827))*1E6 <= ppm*2:
+                            self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of frag',(mz,intensity))
+                            self.mis_matched_mz.remove((mis_mz,mis_intensity))
+                            self.matched_mz.append((mis_mz,mis_intensity))
+
+                    if (abs(molecular_weight*2 + 1.0073118899999827 - mis_mz)/(molecular_weight*2 + 1.0073118899999827))*1E6 <= ppm*2:
+                        self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of mw',molecular_weight)
+                        self.mis_matched_mz.remove((mis_mz,mis_intensity))
+                        self.matched_mz.append((mis_mz,mis_intensity))
+
+        return self.matched_multimer
+
+
+    def generate_sub_recon_spec(self, reset: bool = True):
+        # if not recon_spec:
+        #     raise ValueError('must input a reconstructed spectrum!')
+        if reset:
+            self.sub_recon_spec = None
+
+        self.sub_recon_spec = ReconstructedSpectrum(spectrum_list=self.mis_matched_mz)
+
+        return self.sub_recon_spec
+
+
+
+#TODO: add gen_sub_recon_spectrum method
 
 @dataclass
 class BaseProperties:
@@ -1552,7 +1590,7 @@ class MSData:
                        rescale: bool = True
                        ) -> None:
         """
-        Plot the coelution graph for a certain base identified by base_index
+        Plot the coelution graph for a certain base identified by base_index(relative_index)
         :param rescale:
         :param mz_upperbound:
         :param base_index: index of the base

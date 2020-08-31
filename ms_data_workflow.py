@@ -1,5 +1,8 @@
+# from IROA_workflow import *
+# from MoNA_workflow import *
+from mz_cloud_workflow import *
+from spec_matching_result import *
 from msdata import *
-# from IROA_IDX import *
 
 ##dire:/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3 #
 m = MSData.from_files('IROA_ms1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/IROA_ms1_neg')
@@ -56,26 +59,43 @@ spec_params = dict(
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)
 
-for v in m.base_info.values():
-    print(v)
+# for v in m.base_info.values():
+#     print(v)
 
 ###check base group and find_match within each group and plot###
-spec = m.base_info[m.base_index[6]].spectrum
+spec = m.base_info[m.base_index[7]].spectrum
 ##################################search IROA_database###
 iroa_re = iroa.find_match(target=spec, save_matched_mz=True, transform=math.sqrt) ##compare with iroa database
 iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match in iroa
 spec.gen_matched_mz(other=iroa_re[0][1]) #generate matched_mz and mis_matched_mz to spec.matched_mz and spec.mis_matched_mz
 spec.check_isotope()
 spec.check_adduction_list(exact_mass=iroa_re[0][0].MolecularWeight)
+
 #####################search mzcloud database#######
 mzc_re = mzc.find_match(target=spec, save_matched_mz=True, transform=math.sqrt)
 mzc_re[0][1].bin_vec.matched_idx_mz
+spec.compare_spectrum_plot(mzc_re[0][1])
 spec.gen_matched_mz(other=mzc_re[0][1])
 spec.check_isotope()
-spec.check_adduction_list(exact_mass=mzc_re[0][0].MolecularWeight)
-
+spec.check_adduction_list(molecular_weight=mzc_re[0][0].MolecularWeight)
+spec.check_multimer(molecular_weight=mzc_re[0][0].MolecularWeight)
+sub_spec = spec.generate_sub_recon_spec(recon_spec=spec)
+####2nd round of matching for sub_spec in mzc
+mzc_re_2 = mzc.find_match(target=sub_spec, save_matched_mz=True, transform=math.sqrt)
 ######################search mona_database########
 mona_re = mona.find_match(target=spec, save_matched_mz=True, transform=math.sqrt)
 mona_re[0][1].bin_vec.matched_idx_mz
 spec.gen_matched_mz(other=mona_re[0][1]) ###generate matched_mz to
 spec.check_isotope()  ##check if there are other isotopope for matched_mz
+
+############################mz_cloud##
+result = MZCloudMatchingResult(current_recons_spec=spec,
+                               total_layer_matching=5,
+                               n_candidates_further_matched=1,
+                               mzc_db=mzc,
+                               base_index_abs=m.base_index[7],
+                               base_index_relative=7)
+
+
+
+

@@ -10,10 +10,10 @@ mzc.read_comp_metadata()
 #     return x.SpectrumKind == 'Average spectrum'
 
 
-for c in tqdm(mzc.compounds, desc="processing compounds"):
+for c in tqdm(mzc.compounds, desc="reading MZcloud compounds"):
     c.generate_mz_collection(threshold=1E-3, mode='Negative')
     c.get_precursor(mode='Negative')
-######################################################################################################################
+#######################################################################################################################
 # lucose = []
 # for c in tqdm(mzc.compounds):
 #     if 'lucose' in c.CompoundName:

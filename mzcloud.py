@@ -689,7 +689,7 @@ class MZCloud:
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
                    transform: Optional[Callable[[float], float]] = None,
-                   save_matched_mz = True,
+                   save_matched_mz=True,
                    reset_matched_idx_mz=True
                    ) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
@@ -729,4 +729,3 @@ class MZCloud:
         return cmp_list
 
     __repr__ = __str__
-

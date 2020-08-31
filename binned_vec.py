@@ -49,7 +49,7 @@ class BinnedSparseVector:
 
         return self._norm
 
-    def inner(self, other: "BinnedSparseVector", transform: Optional[Callable[[float], float]] = None, save_matched_mz = False):
+    def inner(self, other: "BinnedSparseVector", transform: Optional[Callable[[float], float]] = None, save_matched_mz=True):
         matched_idx = []
         if self.ppm != other.ppm:
             raise ValueError("cannot compute inner product of two BinnedSparseVector of different ppm.")
@@ -80,22 +80,19 @@ class BinnedSparseVector:
                         break
         if save_matched_mz:
             matched_mz_result = list()
-            # mis_matched_mz_result = list()
             for k in matched_idx:
-                for i,j in self.mz_idx_dic.items():
-                    if j[0] == k:
+                for i, j in self.mz_idx_dic.items():
+                    if j[0] in (k-1, k, k+1):
                         matched_mz_result.append((i, j))
-                    # else:
-                    #     mis_matched_mz_result.append((i,j))
+
 
             self.matched_idx_mz['matched_idx'] = matched_idx
             self.matched_idx_mz['matched_mz'] = matched_mz_result
-            # if self.mis_matched_mz != mis_matched_mz_result:
-            #     self.mis_matched_mz = mis_matched_mz_result
+
         return inner_product
 
     def cos(self, other: "BinnedSparseVector", transform: Optional[Callable[[float], float]] = None,
-            save_matched_mz=False,
+            save_matched_mz=True,
             reset_matched_idx_mz=True) -> float:
         if reset_matched_idx_mz:
             self.matched_idx_mz = dict()
