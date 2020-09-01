@@ -291,15 +291,17 @@ class ReconstructedSpectrum(Spectrum):
                 for mz, idx_int in self.bin_vec.mz_idx_dic.items():
                     if idx_int[0] == idx:
                         recon_matched_mz.append((mz,idx_int[1]))
-                    else:
-                        recon_mis_matched_mz.append((mz,idx_int[1]))
+
+            for mz, idx_int in self.bin_vec.mz_idx_dic.items():
+                if (mz,idx_int[1]) not in recon_matched_mz:
+                    recon_mis_matched_mz.append((mz, idx_int[1]))
 
             self.matched_mz = recon_matched_mz
             self.mis_matched_mz = recon_mis_matched_mz
 
         return recon_matched_mz
 
-    def check_isotope(self, ppm=30,reset=True):
+    def check_isotope(self, ppm=30, reset=True):
         if reset:
             self.matched_isotope_mz = dict()
         percen_thre = [0.20, 0.1, 0.05]
@@ -307,17 +309,19 @@ class ReconstructedSpectrum(Spectrum):
         if self.matched_mz:
             for mz, intensity in self.matched_mz:  ##matched_mz
                 for mis_mz, mis_intensity in self.mis_matched_mz:  ##mis_matched_mz
-                    mz_13C = [mis_mz + 1.003354, mis_mz + 2 * 1.003354, mis_mz + 3 * 1.003354]
+                    mz_13C = [mz + 1.003354, mz + 2 * 1.003354, mz + 3 * 1.003354]  ###13C of matched mz
                     for j in range(len(mz_13C)):
-                        if abs(mis_mz - mz_13C[j]) / mis_mz * 1E6 <= ppm * 2:
+                        if abs(mis_mz - mz_13C[j]) / mz_13C[j] * 1E6 <= ppm * 2:
                             if mis_intensity <= intensity * percen_thre[j]:
                                 if not isotope_mz.get((mis_mz, mis_intensity)):
                                     isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
-                                else:
-                                    isotope_mz[(mis_mz, mis_intensity)].append((mz, intensity))
-                                self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                self.matched_mz.append((mis_mz, mis_intensity))
-        self.matched_isotope_mz = isotope_mz
+                                    self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                    self.matched_mz.append((mis_mz, mis_intensity))
+                                # else:
+                                #     isotope_mz[(mis_mz, mis_intensity)].append((mz, intensity))
+                                # if (mis_mz, mis_intensity) not in self.matched_mz:
+
+            self.matched_isotope_mz = isotope_mz
         return isotope_mz
 
     def check_adduction_list(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
@@ -356,8 +360,9 @@ class ReconstructedSpectrum(Spectrum):
                     for ad, mz in adduction_list[mode].items():
                         if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
                             matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
-                            self.matched_mz.append(mis_mz)
-                            self.mis_matched_mz.remove(mis_mz)
+                            if mis_mz.any() not in self.matched_mz:
+                                self.matched_mz.append(mis_mz)
+                                self.mis_matched_mz.remove(mis_mz)
                 self.matched_adduction = matched_adduction
         else:
             raise warnings.warn('MolecularWeight is None!')
@@ -378,10 +383,12 @@ class ReconstructedSpectrum(Spectrum):
                             self.mis_matched_mz.remove((mis_mz,mis_intensity))
                             self.matched_mz.append((mis_mz,mis_intensity))
 
-                    if (abs(molecular_weight*2 + 1.0073118899999827 - mis_mz)/(molecular_weight*2 + 1.0073118899999827))*1E6 <= ppm*2:
-                        self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of mw',molecular_weight)
-                        self.mis_matched_mz.remove((mis_mz,mis_intensity))
-                        self.matched_mz.append((mis_mz,mis_intensity))
+                        if (abs(molecular_weight*2 - 1.0073118899999827 - mis_mz)/(molecular_weight*2 - 1.0073118899999827))*1E6 <= ppm*2:
+                            if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
+                                if (mis_mz, mis_intensity) not in self.matched_mz:
+                                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of mw', molecular_weight)
+                                    self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                    self.matched_mz.append((mis_mz, mis_intensity))
 
         return self.matched_multimer
 

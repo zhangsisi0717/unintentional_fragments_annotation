@@ -15,6 +15,8 @@ class BinnedSparseVector:
         self._norm: Optional[float] = None
         self.mz_idx_dic: dict = dict()  #key: m/z, value: tuple(idx,abs_intensity)
         self.matched_idx_mz: Optional[dict] = dict()
+        # self.matched_idx_mz['matched_idx'] = index that matched in target spectrum
+        # self.matched_idx_mz['matched_mz'] = index that matched in database's spectrum
         # self.mis_matched_mz: Optional[List(Sequence(tuple))] = list()
 
     def add(self, x: np.ndarray, y: np.ndarray, y_abs: Optional[np.ndarray] = None) -> None:
@@ -50,7 +52,7 @@ class BinnedSparseVector:
         return self._norm
 
     def inner(self, other: "BinnedSparseVector", transform: Optional[Callable[[float], float]] = None, save_matched_mz=True):
-        matched_idx = []
+        matched_idx = set()
         if self.ppm != other.ppm:
             raise ValueError("cannot compute inner product of two BinnedSparseVector of different ppm.")
 
@@ -65,7 +67,7 @@ class BinnedSparseVector:
                 for j in (i, i-1, i+1):
                     if j in other.dict:  # do not directly access other.dict[i]!
                         inner_product += v * other.dict[j]
-                        matched_idx.append(j)
+                        matched_idx.add(j)
                         break
         else:
             for i, v in self.dict.items():
@@ -76,7 +78,7 @@ class BinnedSparseVector:
                 for j in (i, i-1, i+1):
                     if j in other.dict:  # do not directly access other.dict[i]!
                         inner_product += transform(v) * transform(other.dict[j])
-                        matched_idx.append(j)
+                        matched_idx.add(j)
                         break
         if save_matched_mz:
             matched_mz_result = list()

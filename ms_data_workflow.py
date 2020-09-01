@@ -3,7 +3,7 @@
 from mz_cloud_workflow import *
 from spec_matching_result import *
 from msdata import *
-
+import copy
 ##dire:/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3 #
 m = MSData.from_files('IROA_ms1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/IROA_ms1_neg')
 m.apply_smooth_conv(m.gaussian_kernel(4, 12), rt_range=(0., np.inf))
@@ -63,7 +63,8 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 #     print(v)
 
 ###check base group and find_match within each group and plot###
-spec = m.base_info[m.base_index[7]].spectrum
+spec = m.base_info[m.base_index[8]].spectrum
+spec_2 = copy.deepcopy(spec)
 ##################################search IROA_database###
 iroa_re = iroa.find_match(target=spec, save_matched_mz=True, transform=math.sqrt) ##compare with iroa database
 iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match in iroa
@@ -73,15 +74,40 @@ spec.check_adduction_list(exact_mass=iroa_re[0][0].MolecularWeight)
 
 #####################search mzcloud database#######
 mzc_re = mzc.find_match(target=spec, save_matched_mz=True, transform=math.sqrt)
-mzc_re[0][1].bin_vec.matched_idx_mz
-spec.compare_spectrum_plot(mzc_re[0][1])
-spec.gen_matched_mz(other=mzc_re[0][1])
+# mzc_re[0][1].bin_vec.matched_idx_mz
+# spec.compare_spectrum_plot(mzc_re[0][1])
+spec.gen_matched_mz(other=mzc_re[1][1])
 spec.check_isotope()
-spec.check_adduction_list(molecular_weight=mzc_re[0][0].MolecularWeight)
-spec.check_multimer(molecular_weight=mzc_re[0][0].MolecularWeight)
-sub_spec = spec.generate_sub_recon_spec(recon_spec=spec)
+spec.check_adduction_list(molecular_weight=mzc_re[1][0].MolecularWeight)
+spec.check_multimer(molecular_weight=mzc_re[1][0].MolecularWeight)
+sub_spec = spec.generate_sub_recon_spec()
 ####2nd round of matching for sub_spec in mzc
 mzc_re_2 = mzc.find_match(target=sub_spec, save_matched_mz=True, transform=math.sqrt)
+# mzc_re_2[0][1].bin_vec.matched_idx_mz
+# sub_spec.compare_spectrum_plot(mzc_re_2[1][1])
+sub_spec.gen_matched_mz(other=mzc_re_2[0][1])
+sub_spec.check_isotope()
+sub_spec.check_adduction_list(molecular_weight=mzc_re_2[0][0].MolecularWeight)
+sub_spec.check_multimer(molecular_weight=mzc_re_2[0][0].MolecularWeight)
+sub_sub_spec = sub_spec.generate_sub_recon_spec()
+###############3rd round of matching for sub_sub_spec in mzc
+mzc_re_3 = mzc.find_match(target=sub_sub_spec, save_matched_mz=True, transform=math.sqrt)
+# mzc_re_3[1][1].bin_vec.matched_idx_mz
+# sub_sub_spec.compare_spectrum_plot(mzc_re_3[1][1])
+sub_sub_spec.gen_matched_mz(other=mzc_re_3[0][1])
+sub_sub_spec.check_isotope()
+sub_sub_spec.check_adduction_list(molecular_weight=mzc_re_3[0][0].MolecularWeight)
+sub_sub_spec.check_multimer(molecular_weight=mzc_re_3[0][0].MolecularWeight)
+sub_spec_4 = sub_sub_spec.generate_sub_recon_spec()
+#################4th round of matching for sub_spec_4 in mzc
+mzc_re_4 = mzc.find_match(target=sub_spec_4, save_matched_mz=True, transform=math.sqrt)
+# mzc_re_4[1][1].bin_vec.matched_idx_mz
+# sub_spec_4.compare_spectrum_plot(mzc_re_4[1][1])
+sub_spec_4.gen_matched_mz(other=mzc_re_4[0][1])
+sub_spec_4.check_isotope()
+sub_spec_4.check_adduction_list(molecular_weight=mzc_re_4[0][0].MolecularWeight)
+sub_spec_4.check_multimer(molecular_weight=mzc_re_4[0][0].MolecularWeight)
+sub_spec_5 = sub_spec_4.generate_sub_recon_spec()
 ######################search mona_database########
 mona_re = mona.find_match(target=spec, save_matched_mz=True, transform=math.sqrt)
 mona_re[0][1].bin_vec.matched_idx_mz
@@ -89,12 +115,12 @@ spec.gen_matched_mz(other=mona_re[0][1]) ###generate matched_mz to
 spec.check_isotope()  ##check if there are other isotopope for matched_mz
 
 ############################mz_cloud##
-result = MZCloudMatchingResult(current_recons_spec=spec,
+result = MZCloudMatchingResult(current_recons_spec=spec_2,
                                total_layer_matching=5,
-                               n_candidates_further_matched=1,
+                               n_candidates_further_matched=2,
                                mzc_db=mzc,
-                               base_index_abs=m.base_index[7],
-                               base_index_relative=7)
+                               base_index_abs=m.base_index[8],
+                               base_index_relative=8)
 
 
 
