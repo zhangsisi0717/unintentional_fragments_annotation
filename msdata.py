@@ -364,38 +364,52 @@ class ReconstructedSpectrum(Spectrum):
                                 self.matched_mz.append(mis_mz)
                                 self.mis_matched_mz.remove(mis_mz)
                 self.matched_adduction = matched_adduction
-        else:
-            raise warnings.warn('MolecularWeight is None!')
+        # else:
+        #     print('MolecularWeight is None!')
         return self.matched_adduction
 
     def check_multimer(self,molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
                        reset: bool = True, mode: str = 'negative'):
         if reset:
             self.matched_multimer = dict()
-        if mode not in ('negative', 'positive'):
-            raise TypeError('mode must be negative or positive')
-        else:
-            if mode == 'negative':
-                for mz,intensity in self.matched_mz:
-                    for mis_mz,mis_intensity in self.mis_matched_mz:
-                        if (abs(mz*2 + 1.0073118899999827 - mis_mz)/(mz*2 + 1.0073118899999827))*1E6 <= ppm*2:
-                            self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of frag',(mz,intensity))
-                            self.mis_matched_mz.remove((mis_mz,mis_intensity))
-                            self.matched_mz.append((mis_mz,mis_intensity))
+        if molecular_weight:
+            if mode not in ('negative', 'positive'):
+                raise TypeError('mode must be negative or positive')
+            else:
+                if mode == 'negative':
+                    for mz,intensity in self.matched_mz:
+                        for mis_mz,mis_intensity in self.mis_matched_mz:
+                            if (abs(mz*2 + 1.0073118899999827 - mis_mz)/(mz*2 + 1.0073118899999827))*1E6 <= ppm*2:
+                                self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of frag/precur',(mz,intensity))
+                                self.mis_matched_mz.remove((mis_mz,mis_intensity))
+                                self.matched_mz.append((mis_mz,mis_intensity))
 
-                        if (abs(molecular_weight*2 - 1.0073118899999827 - mis_mz)/(molecular_weight*2 - 1.0073118899999827))*1E6 <= ppm*2:
-                            if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
-                                if (mis_mz, mis_intensity) not in self.matched_mz:
-                                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of mw', molecular_weight)
-                                    self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                    self.matched_mz.append((mis_mz, mis_intensity))
+                            if (abs(molecular_weight*2 - 1.0073118899999827 - mis_mz)/(molecular_weight*2 - 1.0073118899999827))*1E6 <= ppm*2:
+                                if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
+                                    if (mis_mz, mis_intensity) not in self.matched_mz:
+                                        self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of mw',
+                                                                                          molecular_weight)
+                                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                        self.matched_mz.append((mis_mz, mis_intensity))
+                elif mode == 'positive':
+                    for mz,intensity in self.matched_mz:
+                        for mis_mz,mis_intensity in self.mis_matched_mz:
+                            if (abs(mz*2 - 1.0073118899999827 - mis_mz)/(mz*2 - 1.0073118899999827))*1E6 <= ppm*2:
+                                self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of frag/precur', (mz, intensity))
+                                self.mis_matched_mz.remove((mis_mz,mis_intensity))
+                                self.matched_mz.append((mis_mz,mis_intensity))
+
+                            if (abs(molecular_weight*2 + 1.0073118899999827 - mis_mz)/(molecular_weight*2 + 1.0073118899999827))*1E6 <= ppm*2:
+                                if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
+                                    if (mis_mz, mis_intensity) not in self.matched_mz:
+                                        self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
+                                                                                          molecular_weight)
+                                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                        self.matched_mz.append((mis_mz, mis_intensity))
 
         return self.matched_multimer
 
-
     def generate_sub_recon_spec(self, reset: bool = True):
-        # if not recon_spec:
-        #     raise ValueError('must input a reconstructed spectrum!')
         if reset:
             self.sub_recon_spec = None
 
@@ -403,9 +417,6 @@ class ReconstructedSpectrum(Spectrum):
 
         return self.sub_recon_spec
 
-
-
-#TODO: add gen_sub_recon_spectrum method
 
 @dataclass
 class BaseProperties:

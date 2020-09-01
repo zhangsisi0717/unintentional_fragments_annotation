@@ -115,7 +115,7 @@ class MonaDatabase:
             if self.neg_dir:
                 with open(self.neg_dir, 'rb') as f:
                     db = pkl.load(f)
-                for key, value in tqdm(db.items(), desc='Reading negative spectra'):
+                for key, value in tqdm(db.items(), desc='Reading MoNA negative spectra'):
                     neg_spec = MonaSpectrum(**value, mode='Negative')
                     self.negative_spectra.append(neg_spec)
                     if neg_spec.name not in self.compounds_dic:
@@ -136,7 +136,7 @@ class MonaDatabase:
             if self.pos_dir:
                 with open(self.pos_dir, 'rb') as f:
                     db = pkl.load(f)
-                for key, value in tqdm(db.items(), desc='Reading positive spectra'):
+                for key, value in tqdm(db.items(), desc='Reading MoNA positive spectra'):
                     pos_spec = MonaSpectrum(**value,mode='Positive')
                     self.positive_spectra.append(pos_spec)
                     if pos_spec.name not in self.compounds_dic:

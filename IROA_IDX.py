@@ -21,8 +21,8 @@ class IROA_Spectrum(Spectrum):
     cpdID: Optional[str] = field(default=None,repr=False)
     Polarity: Optional[str] = field(default=None, repr=False)
     spectrum: Optional[dict] = field(default=None,repr=False)
-    precursor : Optional[float] = field(default=None,repr=False)
-    MolecularWeight:Optional[Numeric] = field(default=None,repr=False)
+    precursor: Optional[float] = field(default=None,repr=False)
+    MolecularWeight: Optional[Numeric] = field(default=None,repr=False)
     InChIKey: Optional[str] = field(default=None, repr=False)
 
 
