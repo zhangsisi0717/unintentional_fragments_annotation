@@ -110,16 +110,16 @@ class PeakDecompositionResults:
     mse: Optional[Numeric] = field(default=None, repr=False)
     rt_range: Optional[Tuple[Numeric, Numeric]] = field(default=None, repr=False)
     status: Optional[int] = None
-    v: Optional[np.ndarray] = field(default=None, repr=False)  #normalized_vector
-    v_max: Optional[Numeric] = field(default=None, repr=False)  #max of absolute intensity of the vector
-    v_recons: Optional[np.ndarray] = field(default=None, repr=False)  #reconstructed vector by using normalized basis
+    v: Optional[np.ndarray] = field(default=None, repr=False)  # normalized_vector
+    v_max: Optional[Numeric] = field(default=None, repr=False)  # max of absolute intensity of the vector
+    v_recons: Optional[np.ndarray] = field(default=None, repr=False)  # reconstructed vector by using normalized basis
+
 
 @dataclass
 class Spectrum:
-    #Name: Optional[str] = field(default=None,repr=True)
-    Polarity: Optional[str] = field(default=None, repr= True)
-    mode: Optional[str] = field(default=None, repr= True)
-    ms_level: Optional[str] = field(default=None,repr=False)
+    Polarity: Optional[str] = field(default=None, repr=True)
+    mode: Optional[str] = field(default=None, repr=True)
+    ms_level: Optional[str] = field(default=None, repr=False)
     spectrum_list: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
     mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
@@ -128,7 +128,7 @@ class Spectrum:
     max_intensity: Optional[Numeric] = field(default=None, repr=False, init=False)
     arg_max_mz: Optional[Float] = field(default=None, repr=False, init=False)
     bin_ppm: float = field(default=60., repr=False, init=True)
-    bin_vec: Optional[BinnedSparseVector] = field(default=None, repr=False,init=False)
+    bin_vec: Optional[BinnedSparseVector] = field(default=None, repr=False, init=False)
 
     def __post_init__(self):
         if self.spectrum_list is not None:
@@ -140,7 +140,7 @@ class Spectrum:
         elif self.mz and self.intensity:
             if len(self.mz) == len(self.intensity):
                 self.n_peaks = len(self.mz)
-                self.spectrum_list = list(zip(self.mz,self.intensity))
+                self.spectrum_list = list(zip(self.mz, self.intensity))
                 self.max_intensity = 0. if self.n_peaks == 0 else np.max(self.intensity)
             else:
                 raise DimensionMismatchError('length of mz must be equal to length of intensity!')
@@ -207,7 +207,7 @@ class Spectrum:
 
     def plot(self, func: Optional[Callable[[Numeric], Numeric]] = None, relative: bool = True, dpi: Numeric = 200,
              figsize: Tuple[Numeric, Numeric] = (8, 6),
-             threshold: float = 1E-2,mz_delta=20.,**kwargs) -> Tuple[Any, Any, Any]:
+             threshold: float = 1E-2, mz_delta=20., **kwargs) -> Tuple[Any, Any, Any]:
 
         """
         Use matplotlib.pyplot.stem() to plot the spectrum.
@@ -259,28 +259,24 @@ class Spectrum:
 
 @dataclass
 class ReconstructedSpectrum(Spectrum):
-    spectrum_label: str = tuple(['Reconstructed','Reference'])
-    spectrum_list_abs: Optional[List[tuple]] = field(default_factory=list,repr=False)
-    intensity_abs_recon: Optional[list] = field(default_factory=list,repr=False)
-    matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
-    mis_matched_mz: Optional[List[tuple]] = field(default_factory=list,repr=False)
-    matched_isotope_mz: Optional[dict] = field(default_factory=dict,repr=False)
-    matched_adduction: Optional[dict] = field(default_factory=dict,repr=False)
-    matched_multimer: Optional[dict] = field(default_factory=dict,repr=False)
-    sub_recon_spec: Optional[Spectrum] = field(default=None,repr=False)
+    spectrum_label: str = tuple(['Reconstructed', 'Reference'])
+    spectrum_list_abs: Optional[List[tuple]] = field(default_factory=list, repr=False)
+    intensity_abs_recon: Optional[list] = field(default_factory=list, repr=False)
+    matched_mz: Optional[List[tuple]] = field(default_factory=list, repr=False)
+    mis_matched_mz: Optional[List[tuple]] = field(default_factory=list, repr=False)
+    matched_isotope_mz: Optional[dict] = field(default_factory=dict, repr=False)
+    matched_adduction: Optional[dict] = field(default_factory=dict, repr=False)
+    matched_multimer: Optional[dict] = field(default_factory=dict, repr=False)
+    sub_recon_spec: Optional[Spectrum] = field(default=None, repr=False)
 
     def __post_init__(self):
         super().__post_init__()
         if self.spectrum_list_abs:
-            self.intensity_abs_recon = [j for _,j in self.spectrum_list_abs]
+            self.intensity_abs_recon = [j for _, j in self.spectrum_list_abs]
             self.bin_vec = BinnedSparseVector()
-            self.bin_vec.add(x=self.mz,y=self.relative_intensity,y_abs=self.intensity_abs_recon)
+            self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity_abs_recon)
 
-    # def gen_subspectrum_postmatch(self,other:Union[Spectrum]):
-    #     if other.matched
-
-    # def check_adduction_list(self):
-    def gen_matched_mz(self, other:[Spectrum], reset_matched_mz=True):
+    def gen_matched_mz(self, other: [Spectrum], reset_matched_mz=True):
         if reset_matched_mz:
             self.matched_mz = []
             self.mis_matched_mz = []
@@ -290,10 +286,10 @@ class ReconstructedSpectrum(Spectrum):
             for idx in other.bin_vec.matched_idx_mz['matched_idx']:
                 for mz, idx_int in self.bin_vec.mz_idx_dic.items():
                     if idx_int[0] == idx:
-                        recon_matched_mz.append((mz,idx_int[1]))
+                        recon_matched_mz.append((mz, idx_int[1]))
 
             for mz, idx_int in self.bin_vec.mz_idx_dic.items():
-                if (mz,idx_int[1]) not in recon_matched_mz:
+                if (mz, idx_int[1]) not in recon_matched_mz:
                     recon_mis_matched_mz.append((mz, idx_int[1]))
 
             self.matched_mz = recon_matched_mz
@@ -317,9 +313,6 @@ class ReconstructedSpectrum(Spectrum):
                                     isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
                                     self.mis_matched_mz.remove((mis_mz, mis_intensity))
                                     self.matched_mz.append((mis_mz, mis_intensity))
-                                # else:
-                                #     isotope_mz[(mis_mz, mis_intensity)].append((mz, intensity))
-                                # if (mis_mz, mis_intensity) not in self.matched_mz:
 
             self.matched_isotope_mz = isotope_mz
         return isotope_mz
@@ -331,26 +324,25 @@ class ReconstructedSpectrum(Spectrum):
             self.matched_adduction = dict()
         if molecular_weight:
             adduction_list = {'positive': {'M+H-2H2O': (35.012788115999996, 1),
-                        'M+H-H2O': (17.00278811000001, 1),
-                          'M-H2O+NH4': (-0.022711889999982304, 1),
-                          'M+H': (-1.0073118899999827, 1),
-                          'M+Li': (-7.016011889999987, 1),
-                          'M+NH4': (-18.03381188999998, 1),
-                          'M+Na': (-22.989211890000007, 1),
-                          'M+CH3OH+H': (-33.03351189, 1),
-                          'M+K': (-38.96311188999999, 1),
-                          'M+ACN+H': (-42.03381188999998, 1),
-                          'M+2Na-H': (-44.97111189, 1),
-                          'M+ACN+Na': (-64.01581188999998, 1)},
-                        'negative': {'M-H':(1.0072881100000188, 1),
-                          'M+F': (-18.998411884000006, 1),
-                          'M-H2O-H': (-19.01838811600001, 1),
-                          'M+Na-2H': (-20.974711883999987, 1),
-                          'M+Cl': (-34.96941188400001, 1),
-                          'M+K-2H': (-36.948611884, 1),
-                          'M+FA-H': (-44.998211884, 1),
-                          'M+CH3COO': (-59.013811884000006, 1)}}
-
+                                           'M+H-H2O': (17.00278811000001, 1),
+                                           'M-H2O+NH4': (-0.022711889999982304, 1),
+                                           'M+H': (-1.0073118899999827, 1),
+                                           'M+Li': (-7.016011889999987, 1),
+                                           'M+NH4': (-18.03381188999998, 1),
+                                           'M+Na': (-22.989211890000007, 1),
+                                           'M+CH3OH+H': (-33.03351189, 1),
+                                           'M+K': (-38.96311188999999, 1),
+                                           'M+ACN+H': (-42.03381188999998, 1),
+                                           'M+2Na-H': (-44.97111189, 1),
+                                           'M+ACN+Na': (-64.01581188999998, 1)},
+                              'negative': {'M-H': (1.0072881100000188, 1),
+                                           'M+F': (-18.998411884000006, 1),
+                                           'M-H2O-H': (-19.01838811600001, 1),
+                                           'M+Na-2H': (-20.974711883999987, 1),
+                                           'M+Cl': (-34.96941188400001, 1),
+                                           'M+K-2H': (-36.948611884, 1),
+                                           'M+FA-H': (-44.998211884, 1),
+                                           'M+CH3COO': (-59.013811884000006, 1)}}
 
             matched_adduction = dict()
             if mode not in ('negative', 'positive'):
@@ -364,11 +356,10 @@ class ReconstructedSpectrum(Spectrum):
                                 self.matched_mz.append(mis_mz)
                                 self.mis_matched_mz.remove(mis_mz)
                 self.matched_adduction = matched_adduction
-        # else:
-        #     print('MolecularWeight is None!')
+
         return self.matched_adduction
 
-    def check_multimer(self,molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
+    def check_multimer(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
                        reset: bool = True, mode: str = 'negative'):
         if reset:
             self.matched_multimer = dict()
@@ -377,14 +368,17 @@ class ReconstructedSpectrum(Spectrum):
                 raise TypeError('mode must be negative or positive')
             else:
                 if mode == 'negative':
-                    for mz,intensity in self.matched_mz:
-                        for mis_mz,mis_intensity in self.mis_matched_mz:
-                            if (abs(mz*2 + 1.0073118899999827 - mis_mz)/(mz*2 + 1.0073118899999827))*1E6 <= ppm*2:
-                                self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of frag/precur',(mz,intensity))
-                                self.mis_matched_mz.remove((mis_mz,mis_intensity))
-                                self.matched_mz.append((mis_mz,mis_intensity))
+                    for mz, intensity in self.matched_mz:
+                        for mis_mz, mis_intensity in self.mis_matched_mz:
+                            if (abs(mz * 2 + 1.0073118899999827 - mis_mz) / (
+                                    mz * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
+                                self.matched_multimer[(mis_mz, mis_intensity)] =\
+                                    ('dimer of frag/precur', (mz, intensity))
+                                self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                self.matched_mz.append((mis_mz, mis_intensity))
 
-                            if (abs(molecular_weight*2 - 1.0073118899999827 - mis_mz)/(molecular_weight*2 - 1.0073118899999827))*1E6 <= ppm*2:
+                            if (abs(molecular_weight * 2 - 1.0073118899999827 - mis_mz) / (
+                                    molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
                                 if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
                                     if (mis_mz, mis_intensity) not in self.matched_mz:
                                         self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of mw',
@@ -392,14 +386,17 @@ class ReconstructedSpectrum(Spectrum):
                                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
                                         self.matched_mz.append((mis_mz, mis_intensity))
                 elif mode == 'positive':
-                    for mz,intensity in self.matched_mz:
-                        for mis_mz,mis_intensity in self.mis_matched_mz:
-                            if (abs(mz*2 - 1.0073118899999827 - mis_mz)/(mz*2 - 1.0073118899999827))*1E6 <= ppm*2:
-                                self.matched_multimer[(mis_mz,mis_intensity)] = ('dimer of frag/precur', (mz, intensity))
-                                self.mis_matched_mz.remove((mis_mz,mis_intensity))
-                                self.matched_mz.append((mis_mz,mis_intensity))
+                    for mz, intensity in self.matched_mz:
+                        for mis_mz, mis_intensity in self.mis_matched_mz:
+                            if (abs(mz * 2 - 1.0073118899999827 - mis_mz) / (
+                                    mz * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
+                                self.matched_multimer[(mis_mz, mis_intensity)] = (
+                                'dimer of frag/precur', (mz, intensity))
+                                self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                                self.matched_mz.append((mis_mz, mis_intensity))
 
-                            if (abs(molecular_weight*2 + 1.0073118899999827 - mis_mz)/(molecular_weight*2 + 1.0073118899999827))*1E6 <= ppm*2:
+                            if (abs(molecular_weight * 2 + 1.0073118899999827 - mis_mz) / (
+                                    molecular_weight * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
                                 if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
                                     if (mis_mz, mis_intensity) not in self.matched_mz:
                                         self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
@@ -430,8 +427,8 @@ class BaseProperties:
     n_overlaps: Optional[Int] = field(default=None, repr=False)
     rt: Optional[Float] = field(default=None, repr=False)
     sin: Optional[Float] = field(default=None, repr=False)
-    v: Optional[np.ndarray] = field(default=None, repr=False) #normalized basis
-    v_max: Optional[Float] = field(default=None, repr=False) #max ints of the orginal basis vector
+    v: Optional[np.ndarray] = field(default=None, repr=False)  # normalized basis
+    v_max: Optional[Float] = field(default=None, repr=False)  # max ints of the orginal basis vector
 
     cos_sim: Optional[Float] = field(default=None, repr=False)
 
@@ -554,12 +551,11 @@ class MSData:
         self._rts_raw: np.ndarray = np.copy(rts)  # raw retention time
         self._rts: np.ndarray = np.copy(rts)  # smoothed retention time
 
-
         self._rts_raw_intercept, self._rts_raw_slope, rel = self.line_model(self._rts_raw)
         if rel > self.options.slope_err_tol:
             msg = "Warning: non-uniform scanning interval: difference has a relative error of {:.2E}".format(rel)
             print(msg)
-            uniform_rts, interp_ints = self.rts_interp_model(self._rts_raw,ints)
+            uniform_rts, interp_ints = self.rts_interp_model(self._rts_raw, ints)
             self._non_uni_rts_raw = np.copy(rts)
             self._rts_raw = uniform_rts
             self._rts_raw_intercept, self._rts_raw_slope, rel = self.line_model(self._rts_raw)
@@ -567,7 +563,8 @@ class MSData:
             self._non_uni_ints_raw = np.copy(ints)
         else:
             self._ints_raw: np.ndarray = np.copy(ints)  # raw intensity, not smoothed, uses abs index
-            self._ints_sm_raw: np.ndarray = np.copy(ints)  # smoothed but not re-ordered, i.e., uses abs index for feature
+            self._ints_sm_raw: np.ndarray = np.copy(
+                ints)  # smoothed but not re-ordered, i.e., uses abs index for feature
             self._ints: np.ndarray = np.copy(ints)
         # re-ordered and smoothed intensity, i.e., use relative index for feature
         self._mzs_raw: np.ndarray = np.copy(mzs)  # raw mz
@@ -606,7 +603,7 @@ class MSData:
         return x[0], delta.mean(), rel_err
 
     @staticmethod
-    def rts_interp_model(rts_raw: np.ndarray,ints_raw: np.ndarray) -> Tuple[np.ndarray,np.ndarray]:
+    def rts_interp_model(rts_raw: np.ndarray, ints_raw: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         delta = rts_raw[1:] - rts_raw[:-1]
         delta_mean = delta.mean()
         uniform_rt = np.arange(start=rts_raw[0], stop=rts_raw[-1] + delta_mean, step=delta_mean)
@@ -765,7 +762,7 @@ class MSData:
             warnings.warn("kernel contains negative value")
 
         # apply smoothing to rts
-        self._rts = np.convolve(self._rts_raw, kernel, 'valid') ##raw_length - kernel_len + 1 #
+        self._rts = np.convolve(self._rts_raw, kernel, 'valid')  ##raw_length - kernel_len + 1 #
         self.n_rt = self._rts.shape[0]
 
         self._rts_intercept, self._rts_slope, rel = self.line_model(self._rts)
@@ -1025,7 +1022,7 @@ class MSData:
         properties['right_ranges'] = right_range
 
         properties['base_heights'] = ints[peaks] - properties['prominences']
-        #prominence:vertical distance between the peak and its lowest contour line#
+        # prominence:vertical distance between the peak and its lowest contour line#
 
         abs_properties = dict()
         for k, v in properties.items():
@@ -1526,7 +1523,7 @@ class MSData:
 
             self._decomposition_results[ft_idx] = decompose_info  # this line should be unnecessary
 
-    def spectrum_coefficient(self, base_index: int, threshold: float = 1E-2, ##or threshold = 1E-2
+    def spectrum_coefficient(self, base_index: int, threshold: float = 1E-2,  ##or threshold = 1E-2
                              max_mse: float = 1E-2, max_rt_diff: float = .5,
                              min_cos: float = 0.9,
                              save: bool = True, load: bool = True) -> np.ndarray:
@@ -1575,9 +1572,9 @@ class MSData:
                 continue
 
             coefficient[idx] = v_max * c[c_idx]
-            #v_max:the max intens of a certain feature,
-            #c : decompose_info.c of a certain feature
-            #c_idx:idx of coefficient of the self.basis
+            # v_max:the max intens of a certain feature,
+            # c : decompose_info.c of a certain feature
+            # c_idx:idx of coefficient of the self.basis
 
         if len(coefficient) > 0 and np.max(coefficient) > 0.:
             abs_coefficient = np.copy(coefficient)
@@ -1595,7 +1592,7 @@ class MSData:
             base_info.n_components = n_components
             base_info.min_cos = min_cos
 
-        return coefficient,abs_coefficient
+        return coefficient, abs_coefficient
 
     def plot_coelution(self, base_index: int, dpi: Optional[float] = None,
                        figsize: Optional[Tuple[Numeric, Numeric]] = None,
@@ -1638,9 +1635,9 @@ class MSData:
                     min(self.rts[-1], base_range[1] + xlim_delta_rt))
 
         coefficient, coefficient_abs = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
-                                                max_mse=max_mse, max_rt_diff=max_rt_diff,
-                                                min_cos=min_cos,
-                                                save=save, load=load)
+                                                                 max_mse=max_mse, max_rt_diff=max_rt_diff,
+                                                                 min_cos=min_cos,
+                                                                 save=save, load=load)
 
         arg_max = np.argmax(coefficient)
         arg_max_mz = self.mzs[arg_max, :].mean()
@@ -1699,7 +1696,6 @@ class MSData:
                      mz_upperbound: float = False,
                      ) -> ReconstructedSpectrum:
 
-
         base_info = self.base_info[self.base_index[base_index]]
 
         if load and base_info.spectrum is not None and base_info.threshold == threshold and \
@@ -1712,24 +1708,25 @@ class MSData:
         else:
 
             coefficient, abs_coefficient = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
-                                                    max_mse=max_mse, max_rt_diff=max_rt_diff,
-                                                    min_cos=min_cos,
-                                                    save=save, load=load)
+                                                                     max_mse=max_mse, max_rt_diff=max_rt_diff,
+                                                                     min_cos=min_cos,
+                                                                     save=save, load=load)
             n_coe = len([i for i in coefficient if i > 0])
-            n_abs_coe = len([i for i in abs_coefficient if i>0])
+            n_abs_coe = len([i for i in abs_coefficient if i > 0])
 
             base_info.mz_upperbound = mz_upperbound
             spectrum_list = [(self.df.iloc[i].mz, v) for i, v in enumerate(coefficient) if v > 0.]
             spectrum_list_abs = [(self.df.iloc[i].mz, v) for i, v in enumerate(abs_coefficient) if v > 0.]
 
             spectrum_list.sort(key=lambda x: x[0])
-            spectrum_list_abs.sort(key=lambda x:x[0])
+            spectrum_list_abs.sort(key=lambda x: x[0])
 
             arg_max = np.argmax(coefficient)
             arg_max_mz = self.mzs[arg_max, :].mean()
 
             spectrum_list = [(mz, intensity) for mz, intensity in spectrum_list if mz <= arg_max_mz + mz_upperbound]
-            spectrum_list_abs = [(mz, intensity) for mz, intensity in spectrum_list_abs if mz <= arg_max_mz + mz_upperbound]
+            spectrum_list_abs = [(mz, intensity) for mz, intensity in spectrum_list_abs if
+                                 mz <= arg_max_mz + mz_upperbound]
 
             spectrum = ReconstructedSpectrum(spectrum_list=spectrum_list, spectrum_list_abs=spectrum_list_abs)
 

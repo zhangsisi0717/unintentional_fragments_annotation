@@ -68,10 +68,11 @@ spec_2 = copy.deepcopy(spec)
 result = GroupMatchingResult(recons_spec=spec_2,
                              base_index_relative=8,
                              base_index_abs=m.base_index[8])
-result.gen_mzc_matching_result(total_layer_matching=4,n_candidates_further_matched=1,database=mzc)
-result.gen_mona_matching_result(total_layer_matching=4,n_candidates_further_matched=1,database=mona)
+result.gen_mzc_matching_result(total_layer_matching=3,n_candidates_further_matched=2,database=mzc)
+result.gen_mona_matching_result(total_layer_matching=3,n_candidates_further_matched=2,database=mona) ##start from 0th match##
 result.gen_iroa_matching_result(total_layer_matching=3,n_candidates_further_matched=1,database=iroa)
-
+result.gen_recur_matched_peaks()
+result.count_total_matched_peaks()
 # ##################################search IROA_database###
 # iroa_re = iroa.find_match(target=spec, save_matched_mz=True, transform=math.sqrt) ##compare with iroa database
 # iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match in iroa
@@ -124,6 +125,7 @@ result.gen_iroa_matching_result(total_layer_matching=3,n_candidates_further_matc
 # spec.check_adduction_list(molecular_weight=mona_re[0][0].total_exact_mass)
 # spec.check_multimer(molecular_weight=mona_re[0][0].total_exact_mass)
 # sub_spec = spec.generate_sub_recon_spec()
+
 
 
 

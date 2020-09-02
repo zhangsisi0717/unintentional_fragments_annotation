@@ -1,6 +1,6 @@
 from mzcloud import *
 # mz_cloud_dir = "../../mz_cloud"
-mz_cloud_dir= '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/mz_cloud'
+mz_cloud_dir = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/mz_cloud'
 mzc = MZCloud(mz_cloud_dir)
 mzc.read_comp_metadata()
 
