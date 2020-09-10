@@ -179,7 +179,7 @@ class MonaDatabase:
     def n_neg_spectra(self):
         return len(self.negative_spectra)
 
-    def find_match(self, target: Union[ReconstructedSpectrum, IROA_Spectrum, MZCloudSpectrum, MonaSpectrum],
+    def find_match(self, target: Union[ReconstructedSpectrum, IROASpectrum, MZCloudSpectrum, MonaSpectrum],
                    rela_threshold: float = 1E-2,
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,

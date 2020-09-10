@@ -310,11 +310,11 @@ class MZCloudCompound:
 @dataclass()
 class MZCloudSpectrum(Spectrum):
     Spectrum_label: str = field(default='MZCloud',repr=False)
-    mode:str = field(default=None,repr=False)
+    mode: str = field(default=None,repr=False)
     Id: Optional[int] = field(default=None, repr=False)
     id: Optional[int] = field(default=None, repr=True, init=False)
     MolecularWeight: Optional[Numeric] = field(default=None, repr=False, init=False)
-    # Polarity: Optional[str] = None
+
     PrecursorPeaks: Optional[List] = field(default=None, repr=False)
     Postprocessing: Optional[str] = field(default=None, repr=False)
     SpectrumKind: Optional[str] = field(default=None, repr=False)
@@ -324,18 +324,10 @@ class MZCloudSpectrum(Spectrum):
     Analyzer: Optional[str] = field(default=None, repr=False)
     IonActivations: Optional[List] = field(default=None, repr=False)
     Filter: Any = field(default=None, repr=False)
-
-    # n_peaks: int = field(default=0, repr=True, init=False)
-    # n_valid_peaks: int = field(default=0, repr=False, init=False)
     mz_range: Tuple[Optional[float], Optional[float]] = field(default=(None, None), repr=True, init=False)
-
-    # mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
-    # intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     accuracy: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     resolution: Optional[np.ndarray] = field(default=None, repr=False, init=False)
-    # max_intensity: Optional[Numeric] = field(default=None, repr=False, init=False)
     is_not_nan: Optional[np.ndarray] = field(default=None, repr=False, init=False)
-    # relative_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     spectrum_valid: bool = field(default=False, repr=False, init=False)
 
     lb: Optional[np.ndarray] = field(default=None, repr=False, init=False)
@@ -350,8 +342,6 @@ class MZCloudSpectrum(Spectrum):
     MZC_env: Optional["MZCloud"] = field(default=None, repr=False)
 
     def __post_init__(self):
-        #super().__post_init__()
-
         self.id = self.Id
 
         if self.Peaks is None:
@@ -386,9 +376,16 @@ class MZCloudSpectrum(Spectrum):
                 self.spectrum_valid = True
                 self.n_valid_peaks = len(self.mz)
 
+                self.reduced_spectrum_list = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
+                self.reduced_mz = np.array([mz for mz, intensity in self.reduced_spectrum_list])
+                self.reduced_intensity = np.array([intensity for mz, intensity in self.reduced_spectrum_list])
+                self.reduced_rela_intensity = self.reduced_intensity / self.max_intensity
+                self.reduced_n_peaks = len(self.reduced_intensity)
+
                 # binned sparse vector
                 self.bin_vec = BinnedSparseVector(ppm=self.bin_ppm)
                 self.bin_vec.add(x=self.mz, y=self.relative_intensity,y_abs=self.intensity)
+
 
 class MZCloud:
     @staticmethod

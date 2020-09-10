@@ -13,8 +13,9 @@ from msdata import ReconstructedSpectrum,Spectrum
 from binned_vec import *
 from mzcloud import *
 
+
 @dataclass
-class IROA_Spectrum(Spectrum):
+class IROASpectrum(Spectrum):
     name: Optional[str] = field(default=None,repr=True)
     ms_level: Optional[str] = field(default='MS2',repr=True)
     id: Optional[str] = field(default=None,repr=False)
@@ -25,38 +26,16 @@ class IROA_Spectrum(Spectrum):
     MolecularWeight: Optional[Numeric] = field(default=None,repr=False)
     InChIKey: Optional[str] = field(default=None, repr=False)
 
-
     def __post_init__(self):
         super().__post_init__()
         self.Polarity = self.mode
 
 
-    # mz: Optional[np.ndarray] = field(default=np.array([i for i in spectrum.keys()]),repr=False)
-    # intensity: Optional[np.ndarray] = field(default=np.array([i for i in spectrum.values()]),repr=False)
-    # spectrum_list = field(default=self.spectrum,repr=False)
-    # def __post_init__(self):
-    #     if self.spectrum is not None:
-    #         self.mz = np.array([i for i in self.spectrum.keys()])
-    #         self.intensity = np.array([i for i in self.spectrum.values()])
-    #         self.spectrum_list = [(i,j) for i,j in self.spectrum.items()]
-    #         self.n_peaks = len(self.mz)
-    #         self.max_intensity = 0. if len(self.mz)==0 else np.max(self.intensity)
-    #
-    #     if self.max_intensity > 0.:
-    #         self.relative_intensity = self.intensity / self.max_intensity
-    #     else:
-    #         self.relative_intensity = self.intensity
-    #
-    #     if len(self.mz) > 0.:
-    #         self.n_peaks = len(self.mz)
-    #
-    #     else:
-    #         raise warnings.warn('number of peaks is 0')
 @dataclass
-class IROA_compounds:
+class IROACompounds:
     name: Optional[str] = field(default=None, repr=True)
-    spectra_1: Optional[List[IROA_Spectrum]] = field(default_factory=list, repr=False)
-    spectra_2: Optional[List[IROA_Spectrum]] = field(default_factory=list, repr=False)
+    spectra_1: Optional[List[IROASpectrum]] = field(default_factory=list, repr=False)
+    spectra_2: Optional[List[IROASpectrum]] = field(default_factory=list, repr=False)
     mzs_1: Optional[MZCollection] = field(default=None, repr=False, init=False)
     mzs_2: Optional[MZCollection] = field(default=None, repr=False, init=False)
     mzs_filtered: Optional[MZCollection] = field(default=None, repr=False, init=False)
@@ -65,17 +44,16 @@ class IROA_compounds:
     MolecularWeight:Optional[Numeric] = field(default=None,repr=False)
     InChIKey: Optional[str] = field(default=None, repr=False)
 
-
-    def add_spectra_1(self,spectra_1:IROA_Spectrum)->List[IROA_Spectrum]:
+    def add_spectra_1(self, spectra_1:IROASpectrum)->List[IROASpectrum]:
         self.spectra_1.add(spectra_1)
 
-    def add_spectra_2(self,spectra_2:IROA_Spectrum)->List[IROA_Spectrum]:
+    def add_spectra_2(self, spectra_2:IROASpectrum)->List[IROASpectrum]:
         self.spectra_2.add(spectra_2)
 
     def generate_mz_collection(self, mode: str = 'Negative', ppm: float = 30.,
                                rela_threshold: float = 1E-2,
                                save: bool = True,
-                               filter_func: Optional[Callable[[IROA_Spectrum], bool]] = None,
+                               filter_func: Optional[Callable[[IROASpectrum], bool]] = None,
                                ) -> Tuple[MZCollection, MZCollection, MZCollection, MZCollection]:
 
         if mode not in ('Negative', 'Positive'):
@@ -84,13 +62,13 @@ class IROA_compounds:
         mzs_1 = MZCollection(ppm=ppm)
         mzs_2 = MZCollection(ppm=ppm)
         if self.spectra_1:
-            spectra_1: List[IROA_Spectrum] = [i for i in self.spectra_1 if i.Polarity == mode]
+            spectra_1: List[IROASpectrum] = [i for i in self.spectra_1 if i.Polarity == mode]
             for s in spectra_1:
                 mz_array = s.mz[s.relative_intensity >= rela_threshold]
                 for mz in mz_array:
                     mzs_1.add(mz)
         if self.spectra_2:
-            spectra_2: List[IROA_Spectrum] = [i for i in self.spectra_2 if i.Polarity == mode]
+            spectra_2: List[IROASpectrum] = [i for i in self.spectra_2 if i.Polarity == mode]
             if spectra_2:
                 for s in spectra_2:
                     mz_array = s.mz[s.relative_intensity >= rela_threshold]
@@ -116,14 +94,15 @@ class IROA_compounds:
             self.mzs_filtered = mzs_filtered
             self.mzs_union = mzs_union
 
+
 @dataclass()
-class IROA_db:
+class IROADataBase:
     dir: Optional[str] = None
-    compounds_list: Optional[List[IROA_compounds]] = field(default_factory=list,repr=None)
+    compounds_list: Optional[List[IROACompounds]] = field(default_factory=list, repr=None)
     compounds_dic: Optional[Dict] = field(default_factory=dict,repr=None) ##key:compounds_name value:List[Spectrum]
     n_compounds: Optional[int] = field(default=None,repr=True)
-    positive_spectra: Optional[List[IROA_Spectrum]] = field(default_factory=list, repr=False)
-    negative_spectra: Optional[List[IROA_Spectrum]] = field(default_factory=list, repr=False)
+    positive_spectra: Optional[List[IROASpectrum]] = field(default_factory=list, repr=False)
+    negative_spectra: Optional[List[IROASpectrum]] = field(default_factory=list, repr=False)
 
     def read_file(self):
         if dir is not None:
@@ -131,38 +110,37 @@ class IROA_db:
                 db = pkl.load(f)
 
             for key,value in tqdm(db['Positive'].items(),desc='Reading positive spectra'):
-                pos_spec = IROA_Spectrum(spectrum_list=[(i,j) for i,j in value['spectrum'].items()],**value)
+                pos_spec = IROASpectrum(spectrum_list=[(i, j) for i, j in value['spectrum'].items()], **value)
                 self.positive_spectra.append(pos_spec)
                 if pos_spec.name not in self.compounds_dic:
                     self.compounds_dic[pos_spec.name] = [pos_spec]
                 else:self.compounds_dic[pos_spec.name].append(pos_spec)
 
             for key,value in tqdm(db['Negative'].items(),desc='Reading negative spectra'):
-                neg_spec = IROA_Spectrum(spectrum_list=[(i,j) for i,j in value['spectrum'].items()],**value)
+                neg_spec = IROASpectrum(spectrum_list=[(i, j) for i, j in value['spectrum'].items()], **value)
                 self.negative_spectra.append(neg_spec)
                 if neg_spec.name not in self.compounds_dic:
                     self.compounds_dic[neg_spec.name] = [neg_spec]
                 else: self.compounds_dic[neg_spec.name].append(neg_spec)
 
             for cmp_name, comp in tqdm(self.compounds_dic.items(),desc='Creating compound list'):
-                self.compounds_list.append(IROA_compounds(name=cmp_name,spectra_2=comp,
-                                                          MolecularWeight=comp[0].MolecularWeight,
-                                                          InChIKey=comp[0].InChIKey))
+                self.compounds_list.append(IROACompounds(name=cmp_name, spectra_2=comp,
+                                                         MolecularWeight=comp[0].MolecularWeight,
+                                                         InChIKey=comp[0].InChIKey))
 
         else:
             raise warnings.warn('must input the directory of the pickle file')
 
-
-    def add_to_compounds_list(self, compound: IROA_compounds)-> List[IROA_compounds]:
+    def add_to_compounds_list(self, compound: IROACompounds)-> List[IROACompounds]:
         self.compounds_list.append(compound)
 
-    def add_positive_spectra(self,spectrum:IROA_Spectrum)->List[IROA_Spectrum]:
+    def add_positive_spectra(self, spectrum:IROASpectrum)->List[IROASpectrum]:
         if spectrum.mode == 'Positive':
             self.positive_spectra.append(spectrum)
         else:
             raise ValueError('spectrum mode is not positive!')
 
-    def add_negative_spectra(self,spectrum:IROA_Spectrum)->List[IROA_Spectrum]:
+    def add_negative_spectra(self, spectrum:IROASpectrum)->List[IROASpectrum]:
         if spectrum.mode == 'Negative':
             self.negative_spectra.append(spectrum)
         else:
@@ -170,13 +148,13 @@ class IROA_db:
 
     @property
     def n_pos_spectra(self):
-         return len(self.positive_spectra)
+        return len(self.positive_spectra)
 
     @property
     def n_neg_spectra(self):
-         return len(self.negative_spectra)
+        return len(self.negative_spectra)
 
-    def find_match(self, target: Union[ReconstructedSpectrum, IROA_Spectrum,MZCloudSpectrum],
+    def find_match(self, target: Union[ReconstructedSpectrum, IROASpectrum, MZCloudSpectrum],
                    rela_threshold: float = 1E-2,
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,

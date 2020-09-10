@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 from dataclasses import dataclass, field, asdict
 from type_checking import *
 from binned_vec import *
+import copy
 
 
 class DimensionMismatchError(Exception):
@@ -46,7 +47,8 @@ class PeakDetectionResults:
     # metadata
     absolute_index: [int] = None
     n_peaks: Optional[int] = None  # number of peaks
-    rt_range: Optional[Tuple[Numeric, Numeric]] = None
+    mz_range: Tuple[float, float] = None
+    rt_range: Optional[Tuple[Numeric, Numeric]] = field(default=None,repr=False)
 
     # peak position
     peaks: Optional[np.ndarray] = field(default=None, repr=False)
@@ -89,7 +91,7 @@ class PeakDetectionResults:
     # matched peak information
     matching_idx: Optional[int] = field(default=None, repr=False)
     matching_peak: Optional[int] = field(default=None, repr=False)
-    matching_abs_peak: Optional[float] = field(default=None, repr=False)
+    matching_abs_peak: Optional[float] = field(default=None, repr=True)
     matching_range: Optional[Tuple[int, int]] = field(default=None, repr=False)
     matching_abs_range: Optional[Tuple[float, float]] = field(default=None, repr=False)
 
@@ -120,6 +122,7 @@ class Spectrum:
     Polarity: Optional[str] = field(default=None, repr=True)
     mode: Optional[str] = field(default=None, repr=True)
     ms_level: Optional[str] = field(default=None, repr=False)
+
     spectrum_list: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
     mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
@@ -130,6 +133,13 @@ class Spectrum:
     bin_ppm: float = field(default=60., repr=False, init=True)
     bin_vec: Optional[BinnedSparseVector] = field(default=None, repr=False, init=False)
 
+    reduced_spectrum_list: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
+    reduced_mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
+    reduced_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
+    reduced_rela_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
+    rela_threshold_reduce: Optional[Numeric] = field(default=0.02, repr=False, init=False)
+    reduced_n_peaks:int = field(default=0, repr=True, init=False)
+
     def __post_init__(self):
         if self.spectrum_list is not None:
             self.n_peaks = len(self.spectrum_list)
@@ -137,16 +147,28 @@ class Spectrum:
             self.intensity = np.array([intensity for mz, intensity in self.spectrum_list])
             self.max_intensity = 0. if self.n_peaks == 0 else np.max(self.intensity)
 
+            self.reduced_spectrum_list = [(mz, ints) for mz, ints in self.spectrum_list if
+                                          ints > self.max_intensity * self.rela_threshold_reduce]
+            self.reduced_mz = np.array([mz for mz, intensity in self.reduced_spectrum_list])
+            self.reduced_intensity = np.array([intensity for mz, intensity in self.reduced_spectrum_list])
+            self.reduced_n_peaks = len(self.reduced_intensity)
+
         elif self.mz and self.intensity:
             if len(self.mz) == len(self.intensity):
                 self.n_peaks = len(self.mz)
                 self.spectrum_list = list(zip(self.mz, self.intensity))
                 self.max_intensity = 0. if self.n_peaks == 0 else np.max(self.intensity)
-            else:
+                self.reduced_spectrum_list = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
+                self.reduced_mz = np.array([mz for mz, intensity in self.reduced_spectrum_list])
+                self.reduced_intensity = np.array([intensity for mz, intensity in self.reduced_spectrum_list])
+                self.reduced_n_peaks = len(self.reduced_intensity)
+
+        else:
                 raise DimensionMismatchError('length of mz must be equal to length of intensity!')
 
         if self.max_intensity > 0.:
             self.relative_intensity = self.intensity / self.max_intensity
+            self.reduced_rela_intensity = self.reduced_intensity/self.max_intensity
         else:
             self.relative_intensity = self.intensity
         if self.n_peaks > 0:
@@ -268,6 +290,8 @@ class ReconstructedSpectrum(Spectrum):
     matched_adduction: Optional[dict] = field(default_factory=dict, repr=False)
     matched_multimer: Optional[dict] = field(default_factory=dict, repr=False)
     sub_recon_spec: Optional[Spectrum] = field(default=None, repr=False)
+    Polarity: Optional[str] = field(default=None, repr=False)
+    mode: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -352,9 +376,8 @@ class ReconstructedSpectrum(Spectrum):
                     for ad, mz in adduction_list[mode].items():
                         if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
                             matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
-                            if mis_mz.any() not in self.matched_mz:
-                                self.matched_mz.append(mis_mz)
-                                self.mis_matched_mz.remove(mis_mz)
+                            self.matched_mz.append(mis_mz)
+                            self.mis_matched_mz.remove(mis_mz)
                 self.matched_adduction = matched_adduction
 
         return self.matched_adduction
@@ -381,7 +404,7 @@ class ReconstructedSpectrum(Spectrum):
                                     molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
                                 if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
                                     if (mis_mz, mis_intensity) not in self.matched_mz:
-                                        self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of mw',
+                                        self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
                                                                                           molecular_weight)
                                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
                                         self.matched_mz.append((mis_mz, mis_intensity))
@@ -433,6 +456,8 @@ class BaseProperties:
     cos_sim: Optional[Float] = field(default=None, repr=False)
 
     coefficient: Optional[np.ndarray] = field(default=None, repr=False)
+    coefficient_abs: Optional[np.ndarray] = field(default=None, repr=False)
+
     n_components: Optional[int] = None
     threshold: Optional[float] = field(default=None, repr=False)
     mz_upperbound: Optional[float] = field(default=None, repr=False)
@@ -524,6 +549,10 @@ class MSData:
 
         # handle options
         self.options: MSDataOptions = MSDataOptions(**options)
+        self._ints_duplicates_raw = None
+        self._ints_duplicates_sm_raw = None
+        self._mzs_duplicates_raw = None
+        self._mzs_duplicates = None
 
         self.extra_info: Dict[Any, Any] = {}
         if extra_info is not None:
@@ -581,6 +610,7 @@ class MSData:
         # container for peak detection results, uses relative index
         self._detection_results: Dict[Int, PeakDetectionResults] = dict()
         self._detection_results_raw: Dict[Int, PeakDetectionResults] = dict()  # same as above, uses abs index
+        self._detection_results_duplicates: Dict[Int, PeakDetectionResults] = dict()
 
         # container for peak decomposition results, uses relative index
         self._decomposition_results: Dict[Int, PeakDecompositionResults] = dict()
@@ -859,9 +889,11 @@ class MSData:
         if smooth:  # plot smoothed
             rts = self.rts
             ints = self._ints_sm_raw
+
         else:
             rts = self.rts_raw
             ints = self._ints_raw
+
 
         if rt_range is None:  # all range
             rt_idx = np.arange(rts.shape[0])
@@ -870,6 +902,7 @@ class MSData:
 
         rts = np.copy(rts[rt_idx])
         ints = np.copy(ints[abs_index, :][:, rt_idx])
+
 
         if plot:
             with self.plt_context(dpi=dpi, figsize=figsize):
@@ -1089,6 +1122,7 @@ class MSData:
             properties = self.peak_detection(rts=rts, ints=ints[i, :], plot=False, **options)
             properties.rt_range = rt_range
             properties.absolute_index = idx_raw
+            properties.mz_range = self.mzs_raw[idx_raw]
 
             if properties.n_peaks > 0:  # at least 1 peak detected
                 matching_rt = self.df_raw.iloc[idx]['rt']
@@ -1112,6 +1146,39 @@ class MSData:
             # save results
             self._detection_results[idx] = properties  # this uses relative index
             self._detection_results_raw[idx_raw] = properties  # this uses abs index
+
+    def remove_duplicates_detection(self):
+        if not self._detection_results_duplicates:
+            self._detection_results_duplicates = self._detection_results_raw
+            duplicates = dict()
+            unique_detection_result = dict()
+            unique_abs_index = list()
+            for rela_index, re in self._detection_results_raw.items():
+                mz_min, mz_max = np.round(re.mz_range[0],decimals=3), np.round(re.mz_range[1],decimals=3)
+                if re.matching_abs_peak is not None:
+                    matching_abs_peak = np.round(re.matching_abs_peak)
+                    if not duplicates.get((mz_min, mz_max,matching_abs_peak)):
+                        duplicates[(mz_min, mz_max, matching_abs_peak)] = [(rela_index,re.absolute_index)]
+                    else:
+                        duplicates[(mz_min, mz_max,matching_abs_peak)].append((rela_index,re.absolute_index))
+            i = 0
+            if i <= len(duplicates)-1:
+                for mzrange, rela_index in duplicates.items():
+                    unique_detection_result[i] = self._detection_results_raw[rela_index[0][0]]
+                    unique_abs_index.append(rela_index[0][0])
+                    i += 1
+            self._detection_results_raw = unique_detection_result
+            self._detection_results = unique_detection_result
+            self.n_feature = len(unique_detection_result)
+            self._ints_duplicates_raw = self._ints_raw
+            self._ints_duplicates_sm_raw = self._ints_sm_raw
+            self._ints_raw = self._ints_raw[unique_abs_index]
+            self._ints_sm_raw = self._ints_sm_raw[unique_abs_index]
+            self._ints = np.copy(self._ints_raw)
+            self._mzs_duplicates_raw = self._mzs_raw
+            self._mzs_duplicates = self._mzs
+            self._mzs_raw = self._mzs_raw[unique_abs_index]
+            self._mzs = np.copy(self._mzs_raw)
 
     def get_peak_detection_results(self, index: Union[int, Sequence[int]],
                                    ordered: bool = True) -> Union[PeakDetectionResults, List[PeakDetectionResults]]:
@@ -1536,8 +1603,7 @@ class MSData:
 
         if load and base_info.coefficient is not None and base_info.threshold == threshold and \
                 base_info.max_mse == max_mse and base_info.max_rt_diff == max_rt_diff:
-            return base_info.coefficient
-
+            return base_info.coefficient, base_info.coefficient_abs
         base_rt = base_info.rt
 
         c_idx = int(base_index) + 1  # index in c vector;
@@ -1589,6 +1655,7 @@ class MSData:
             base_info.max_mse = max_mse
             base_info.max_rt_diff = max_rt_diff
             base_info.coefficient = coefficient
+            base_info.coefficient_abs = abs_coefficient
             base_info.n_components = n_components
             base_info.min_cos = min_cos
 
@@ -1601,7 +1668,7 @@ class MSData:
                        xlim: Optional[Union[str, Tuple[Numeric, Numeric]]] = 'auto',
                        xlim_delta_rt: float = 20.,
                        save: bool = True, load: bool = True,
-                       mz_upperbound: float = 5,
+                       mz_upperbound: float = np.inf, ##could set mz_upperbound to infinite
                        rescale: bool = True
                        ) -> None:
         """
@@ -1634,7 +1701,7 @@ class MSData:
             xlim = (max(self.rts[0], base_range[0] - xlim_delta_rt),
                     min(self.rts[-1], base_range[1] + xlim_delta_rt))
 
-        coefficient, coefficient_abs = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
+        coefficient, _ = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
                                                                  max_mse=max_mse, max_rt_diff=max_rt_diff,
                                                                  min_cos=min_cos,
                                                                  save=save, load=load)
@@ -1711,8 +1778,8 @@ class MSData:
                                                                      max_mse=max_mse, max_rt_diff=max_rt_diff,
                                                                      min_cos=min_cos,
                                                                      save=save, load=load)
-            n_coe = len([i for i in coefficient if i > 0])
-            n_abs_coe = len([i for i in abs_coefficient if i > 0])
+            # n_coe = len([i for i in coefficient if i > 0])
+            # n_abs_coe = len([i for i in abs_coefficient if i > 0])
 
             base_info.mz_upperbound = mz_upperbound
             spectrum_list = [(self.df.iloc[i].mz, v) for i, v in enumerate(coefficient) if v > 0.]

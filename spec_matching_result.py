@@ -129,7 +129,7 @@ class MoNAMatchingResult(MZCloudMatchingResult):
 
 @dataclass()
 class IROAMatchingResult(MZCloudMatchingResult):
-    database: Optional[IROA_db] = field(default=None, repr=False)
+    database: Optional[IROADataBase] = field(default=None, repr=False)
 
     def __post_init__(self):
         if not self.nth_match:
@@ -236,7 +236,7 @@ class GroupMatchingResult:
 
     def gen_iroa_matching_result(self, total_layer_matching: Optional[int] = 3,
                                  n_candidates_further_matched: Optional[int] = 1,
-                                 database: [IROA_db] = None,
+                                 database: [IROADataBase] = None,
                                  base_index_abs: Optional[int] = base_index_abs,
                                  base_index_relative: Optional[int] = base_index_relative) -> IROAMatchingResult:
 
