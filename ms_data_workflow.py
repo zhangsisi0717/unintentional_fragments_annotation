@@ -56,7 +56,7 @@ spec_params = dict(
     # min_cos=.99
     min_cos=0.
 )
-# m.gen_spectrum(0, plot=False, load=False, **spec_params)
+m.gen_spectrum(0, plot=False, load=False, **spec_params)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)
 
@@ -67,7 +67,7 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 final_matching_results = []
 import datetime
 start=datetime.datetime.now()
-for i in range(20,30):
+for i in range(0,1):
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
     result = GroupMatchingResult(recons_spec=spec_2,
@@ -81,6 +81,11 @@ for i in range(20,30):
     final_matching_results.append(result)
 end=datetime.datetime.now()
 print(end-start)
+with open('3T3_pro_4ul_ms_data.pkl', "wb") as write_file:
+    pkl.dump(m, write_file)
+
+with open('3T3_pro_re_mona.pkl', "wb") as write_file:
+    pkl.dump(result.mona_result, write_file)
 # ##################################search IROA_database###
 # iroa_re = iroa.find_match(target=spec, save_matched_mz=True, transform=math.sqrt) ##compare with iroa database
 # iroa_re[0][1].bin_vec.matched_idx_mz #check matched mz for best match in iroa

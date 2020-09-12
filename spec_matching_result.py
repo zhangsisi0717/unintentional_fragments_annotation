@@ -345,3 +345,17 @@ class GroupMatchingResult:
                 self.total_matched_peaks_iroa = total_peaks
             else:
                 warnings.warn('run gen_recur_matched_peaks() first ')
+
+    def remove_db(self):
+        def recursive_remove_database(cur_result):
+            if cur_result.n_candidates_further_match_r is None:
+                cur_result.database = None
+                return
+            cur_result.database = None
+            for _, sub_result in cur_result.n_candidates_further_match_r.items():
+                recursive_remove_database(sub_result)
+            return
+
+        recursive_remove_database(self.mzcloud_result)
+        recursive_remove_database(self.mona_result)
+        recursive_remove_database(self.iroa_result)

@@ -553,7 +553,7 @@ class MSData:
         self._ints_duplicates_sm_raw = None
         self._mzs_duplicates_raw = None
         self._mzs_duplicates = None
-
+        self._df_duplicates = None
         self.extra_info: Dict[Any, Any] = {}
         if extra_info is not None:
             self.extra_info.update(extra_info)
@@ -1162,11 +1162,10 @@ class MSData:
                     else:
                         duplicates[(mz_min, mz_max,matching_abs_peak)].append((rela_index,re.absolute_index))
             i = 0
-            if i <= len(duplicates)-1:
-                for mzrange, rela_index in duplicates.items():
-                    unique_detection_result[i] = self._detection_results_raw[rela_index[0][0]]
-                    unique_abs_index.append(rela_index[0][0])
-                    i += 1
+            for mzrange, rela_index in duplicates.items():
+                unique_detection_result[i] = self._detection_results_raw[rela_index[0][0]]
+                unique_abs_index.append(rela_index[0][0])
+                i += 1
             self._detection_results_raw = unique_detection_result
             self._detection_results = unique_detection_result
             self.n_feature = len(unique_detection_result)
@@ -1179,6 +1178,8 @@ class MSData:
             self._mzs_duplicates = self._mzs
             self._mzs_raw = self._mzs_raw[unique_abs_index]
             self._mzs = np.copy(self._mzs_raw)
+            self._df_duplicates = self._df
+            self._df = self._df.iloc[unique_abs_index]
 
     def get_peak_detection_results(self, index: Union[int, Sequence[int]],
                                    ordered: bool = True) -> Union[PeakDetectionResults, List[PeakDetectionResults]]:
@@ -1760,7 +1761,7 @@ class MSData:
                      xlim: Optional[Union[str, Tuple[Numeric, Numeric]]] = 'auto',
                      xlim_delta_mz: float = 50.,
                      save: bool = True, load: bool = True,
-                     mz_upperbound: float = False,
+                     mz_upperbound: float = np.inf,
                      ) -> ReconstructedSpectrum:
 
         base_info = self.base_info[self.base_index[base_index]]
