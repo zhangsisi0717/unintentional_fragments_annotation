@@ -54,7 +54,7 @@ class MZCloudMatchingResult:
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
 
                 for i in range(int(self.n_candidates_further_matched)):
-                    cur_candi_info = self.current_raw_matching_result[i][0]
+                    cur_candi_info = self.current_raw_matching_result[i]
                     cur_spec = copy.deepcopy(self.current_recons_spec)
                     cur_spec.gen_matched_mz(self.current_raw_matching_result[i][1])
                     cur_spec.check_isotope()
@@ -104,7 +104,7 @@ class MoNAMatchingResult(MZCloudMatchingResult):
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
 
                 for i in range(int(self.n_candidates_further_matched)):
-                    cur_candi_info = self.current_raw_matching_result[i][0]
+                    cur_candi_info = self.current_raw_matching_result[i]
                     cur_spec = copy.deepcopy(self.current_recons_spec)
                     cur_spec.gen_matched_mz(self.current_raw_matching_result[i][1])
                     cur_spec.check_isotope()
@@ -153,7 +153,7 @@ class IROAMatchingResult(MZCloudMatchingResult):
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
 
                 for i in range(int(self.n_candidates_further_matched)):
-                    cur_candi_info = self.current_raw_matching_result[i][0]
+                    cur_candi_info = self.current_raw_matching_result[i]
                     cur_spec = copy.deepcopy(self.current_recons_spec)
                     cur_spec.gen_matched_mz(self.current_raw_matching_result[i][1])
                     cur_spec.check_isotope()
@@ -194,13 +194,17 @@ class GroupMatchingResult:
     mona_result: Optional[MoNAMatchingResult] = field(default=None, repr=False)
     iroa_result: Optional[IROAMatchingResult] = field(default=None, repr=False)
 
-    recur_matched_peaks_mzc: Optional[List[List]] = field(default=None, repr=False)
-    recur_matched_peaks_mona: Optional[List[List]] = field(default=None, repr=False)
-    recur_matched_peaks_iroa: Optional[List[List]] = field(default=None, repr=False)
+    # recur_matched_peaks_mzc: Optional[List[List]] = field(default=None, repr=False)
+    # recur_matched_peaks_mona: Optional[List[List]] = field(default=None, repr=False)
+    # recur_matched_peaks_iroa: Optional[List[List]] = field(default=None, repr=False)
 
-    total_matched_peaks_mzc: Optional[np.ndarray] = field(default=None, repr=False)
-    total_matched_peaks_mona: Optional[np.ndarray] = field(default=None, repr=False)
-    total_matched_peaks_iroa: Optional[np.ndarray] = field(default=None, repr=False)
+    sum_matched_results_mzc: Optional[Dict] = field(default=None,repr=False)
+    sum_matched_results_mona: Optional[Dict] = field(default=None,repr=False)
+    sum_matched_results_iroa: Optional[Dict] = field(default=None,repr=False)
+
+    total_matched_peaks_mzc: Optional[List] = field(default=None, repr=False)
+    total_matched_peaks_mona: Optional[List] = field(default=None, repr=False)
+    total_matched_peaks_iroa: Optional[List] = field(default=None, repr=False)
 
     def gen_mzc_matching_result(self, total_layer_matching: Optional[int] = 3,
                                 n_candidates_further_matched: Optional[int] = 1,
@@ -250,101 +254,101 @@ class GroupMatchingResult:
 
             self.iroa_result = result
 
-    def gen_recur_matched_peaks_mzc(self, cur_result: MZCloudMatchingResult = mzcloud_result) -> List:
-        if not cur_result.n_candidates_further_match_r:
-            return [[]]
-
-        final_result = []
-        for n_candi, res in cur_result.n_candidates_further_match_r.items():
-            for i in self.gen_recur_matched_peaks_mzc(cur_result=res):
-                temp_result = [(res.parent_matched_mz, res.nth_match, res.nth_candidate)] + i
-                final_result.append(temp_result)
-        return final_result
-
-    def gen_recur_matched_peaks_mona(self, cur_result: MoNAMatchingResult = mona_result) -> List:
-        if not cur_result.n_candidates_further_match_r:
-            return [[]]
-
-        final_result = []
-        for n_candi, res in cur_result.n_candidates_further_match_r.items():
-            for i in self.gen_recur_matched_peaks_mona(cur_result=res):
-                temp_result = [(res.parent_matched_mz, res.nth_match, res.nth_candidate)] + i
-                final_result.append(temp_result)
-        return final_result
-
-    def gen_recur_matched_peaks_iroa(self, cur_result: IROAMatchingResult = iroa_result) -> List:
-        if not cur_result.n_candidates_further_match_r:
-            return [[]]
-
-        final_result = []
-        for n_candi, res in cur_result.n_candidates_further_match_r.items():
-            for i in self.gen_recur_matched_peaks_iroa(cur_result=res):
-                temp_result = [(res.parent_matched_mz, res.nth_match, res.nth_candidate)] + i
-                final_result.append(temp_result)
-        return final_result
-
-    def gen_recur_matched_peaks(self, mzc: Optional[bool] = True, mona: Optional[bool] = True,
-                                iroa: Optional[bool] = True, reset=True):
-        if reset:
-            self.recur_matched_peaks_mzc = None
-            self.recur_matched_peaks_mona = None
-            self.recur_matched_peaks_iroa = None
-        if mzc:
-            if self.mzcloud_result:
-                self.recur_matched_peaks_mzc = self.gen_recur_matched_peaks_mzc(cur_result=self.mzcloud_result)
-            else:
-                warnings.warn('please run gen_mzc_matching_result() first')
-
-        if mona:
-            if self.mona_result:
-                self.recur_matched_peaks_mona = self.gen_recur_matched_peaks_mona(cur_result=self.mona_result)
-            else:
-                warnings.warn('please run gen_mona_matching_result() first')
-
-        if iroa:
-            if self.iroa_result:
-                self.recur_matched_peaks_iroa = self.gen_recur_matched_peaks_iroa(cur_result=self.iroa_result)
-
-            else:
-                warnings.warn('please run gen_iroa_matching_result() first')
-
-    def count_total_matched_peaks(self, mzc: Optional[bool] = True, mona: Optional[bool] = True,
-                                  iroa: Optional[bool] = True, reset=True):
-
-        if reset:
-            self.total_matched_peaks_iroa = None
-            self.total_matched_peaks_mona = None
-            self.total_matched_peaks_mzc = None
-
-        if mzc:
-            if self.recur_matched_peaks_mzc:
-                total_peaks = np.zeros(len(self.recur_matched_peaks_mzc))
-                for i in range(len(self.recur_matched_peaks_mzc)):
-                    for peaks, nth_match, nth_candidate in self.recur_matched_peaks_mzc[i]:
-                        total_peaks[i] += len(peaks)
-                self.total_matched_peaks_mzc = total_peaks
-            else:
-                warnings.warn('run gen_recur_matched_peaks() first ')
-
-        if mona:
-            if self.recur_matched_peaks_mona:
-                total_peaks = np.zeros(len(self.recur_matched_peaks_mona))
-                for i in range(len(self.recur_matched_peaks_mona)):
-                    for peaks, nth_match, nth_candidate in self.recur_matched_peaks_mona[i]:
-                        total_peaks[i] += len(peaks)
-                self.total_matched_peaks_mona = total_peaks
-            else:
-                warnings.warn('run gen_recur_matched_peaks() first ')
-
-        if iroa:
-            if self.recur_matched_peaks_iroa:
-                total_peaks = np.zeros(len(self.recur_matched_peaks_iroa))
-                for i in range(len(self.recur_matched_peaks_iroa)):
-                    for peaks, nth_match, nth_candidate in self.recur_matched_peaks_iroa[i]:
-                        total_peaks[i] += len(peaks)
-                self.total_matched_peaks_iroa = total_peaks
-            else:
-                warnings.warn('run gen_recur_matched_peaks() first ')
+    # def gen_recur_matched_peaks_mzc(self, cur_result: MZCloudMatchingResult = mzcloud_result) -> List:
+    #     if not cur_result.n_candidates_further_match_r:
+    #         return [[]]
+    #
+    #     final_result = []
+    #     for n_candi, res in cur_result.n_candidates_further_match_r.items():
+    #         for i in self.gen_recur_matched_peaks_mzc(cur_result=res):
+    #             temp_result = [(res.parent_matched_mz, res.nth_match, res.nth_candidate)] + i
+    #             final_result.append(temp_result)
+    #     return final_result
+    #
+    # def gen_recur_matched_peaks_mona(self, cur_result: MoNAMatchingResult = mona_result) -> List:
+    #     if not cur_result.n_candidates_further_match_r:
+    #         return [[]]
+    #
+    #     final_result = []
+    #     for n_candi, res in cur_result.n_candidates_further_match_r.items():
+    #         for i in self.gen_recur_matched_peaks_mona(cur_result=res):
+    #             temp_result = [(res.parent_matched_mz, res.nth_match, res.nth_candidate)] + i
+    #             final_result.append(temp_result)
+    #     return final_result
+    #
+    # def gen_recur_matched_peaks_iroa(self, cur_result: IROAMatchingResult = iroa_result) -> List:
+    #     if not cur_result.n_candidates_further_match_r:
+    #         return [[]]
+    #
+    #     final_result = []
+    #     for n_candi, res in cur_result.n_candidates_further_match_r.items():
+    #         for i in self.gen_recur_matched_peaks_iroa(cur_result=res):
+    #             temp_result = [(res.parent_matched_mz, res.nth_match, res.nth_candidate)] + i
+    #             final_result.append(temp_result)
+    #     return final_result
+    #
+    # def gen_recur_matched_peaks(self, mzc: Optional[bool] = True, mona: Optional[bool] = True,
+    #                             iroa: Optional[bool] = True, reset=True):
+    #     if reset:
+    #         self.recur_matched_peaks_mzc = None
+    #         self.recur_matched_peaks_mona = None
+    #         self.recur_matched_peaks_iroa = None
+    #     if mzc:
+    #         if self.mzcloud_result:
+    #             self.recur_matched_peaks_mzc = self.gen_recur_matched_peaks_mzc(cur_result=self.mzcloud_result)
+    #         else:
+    #             warnings.warn('please run gen_mzc_matching_result() first')
+    #
+    #     if mona:
+    #         if self.mona_result:
+    #             self.recur_matched_peaks_mona = self.gen_recur_matched_peaks_mona(cur_result=self.mona_result)
+    #         else:
+    #             warnings.warn('please run gen_mona_matching_result() first')
+    #
+    #     if iroa:
+    #         if self.iroa_result:
+    #             self.recur_matched_peaks_iroa = self.gen_recur_matched_peaks_iroa(cur_result=self.iroa_result)
+    #
+    #         else:
+    #             warnings.warn('please run gen_iroa_matching_result() first')
+    #
+    # def count_total_matched_peaks(self, mzc: Optional[bool] = True, mona: Optional[bool] = True,
+    #                               iroa: Optional[bool] = True, reset=True):
+    #
+    #     if reset:
+    #         self.total_matched_peaks_iroa = None
+    #         self.total_matched_peaks_mona = None
+    #         self.total_matched_peaks_mzc = None
+    #
+    #     if mzc:
+    #         if self.recur_matched_peaks_mzc:
+    #             total_peaks = np.zeros(len(self.recur_matched_peaks_mzc))
+    #             for i in range(len(self.recur_matched_peaks_mzc)):
+    #                 for peaks, nth_match, nth_candidate in self.recur_matched_peaks_mzc[i]:
+    #                     total_peaks[i] += len(peaks)
+    #             self.total_matched_peaks_mzc = total_peaks
+    #         else:
+    #             warnings.warn('run gen_recur_matched_peaks() first ')
+    #
+    #     if mona:
+    #         if self.recur_matched_peaks_mona:
+    #             total_peaks = np.zeros(len(self.recur_matched_peaks_mona))
+    #             for i in range(len(self.recur_matched_peaks_mona)):
+    #                 for peaks, nth_match, nth_candidate in self.recur_matched_peaks_mona[i]:
+    #                     total_peaks[i] += len(peaks)
+    #             self.total_matched_peaks_mona = total_peaks
+    #         else:
+    #             warnings.warn('run gen_recur_matched_peaks() first ')
+    #
+    #     if iroa:
+    #         if self.recur_matched_peaks_iroa:
+    #             total_peaks = np.zeros(len(self.recur_matched_peaks_iroa))
+    #             for i in range(len(self.recur_matched_peaks_iroa)):
+    #                 for peaks, nth_match, nth_candidate in self.recur_matched_peaks_iroa[i]:
+    #                     total_peaks[i] += len(peaks)
+    #             self.total_matched_peaks_iroa = total_peaks
+    #         else:
+    #             warnings.warn('run gen_recur_matched_peaks() first ')
 
     def remove_db(self):
         def recursive_remove_database(cur_result):
@@ -359,3 +363,85 @@ class GroupMatchingResult:
         recursive_remove_database(self.mzcloud_result)
         recursive_remove_database(self.mona_result)
         recursive_remove_database(self.iroa_result)
+
+    @staticmethod
+    def summarize_all_matching_result(result:Union[MZCloudMatchingResult,MoNAMatchingResult,IROAMatchingResult]):
+        if not result.n_candidates_further_match_r:
+            nth_candidate = [[]]
+            nth_matching = [[]]
+            matched_candi_info = [[]]
+            matched_peaks = [[]]
+            matched_adducts = [[]]
+            return nth_candidate, nth_matching, matched_candi_info, matched_peaks, matched_adducts
+
+        total_nth_candidate,total_nth_matching,total_candi_info = [],[],[]
+        total_matched_peaks, total_matched_adducts = [],[]
+        for _,candi in result.n_candidates_further_match_r.items():
+            nth_candidate, nth_matching, matched_candi_info, matched_peaks,matched_adducts = \
+                GroupMatchingResult.summarize_all_matching_result(candi)
+            for i in nth_candidate:
+                temp_candidate = [candi.nth_candidate] + i
+                total_nth_candidate.append(temp_candidate)
+            for i in nth_matching:
+                temp_nth_match = [candi.nth_match] + i
+                total_nth_matching.append(temp_nth_match)
+            for i in matched_candi_info:
+                temp_matched_candi_info = [candi.cur_candidate_info] + i
+                total_candi_info.append(temp_matched_candi_info)
+            for i in matched_peaks:
+                temp_total_matched_peaks = [candi.parent_matched_mz] + i
+                total_matched_peaks.append(temp_total_matched_peaks)
+            for i in matched_adducts:
+                temp_matched_adducts = [{'matched_multimer':candi.parent_recons_spec.matched_multimer,
+                                         'matched_isotope_mz':candi.parent_recons_spec.matched_isotope_mz,
+                                         'matched_adducts':candi.parent_recons_spec.matched_adduction}] + i
+                total_matched_adducts.append(temp_matched_adducts)
+        return total_nth_candidate,total_nth_matching,total_candi_info,total_matched_peaks, total_matched_adducts
+
+    @staticmethod
+    def gen_dic_for_matching_result(a: List, b: List, c: List, d: List, e: List):
+        t = np.array([len(a), len(b), len(c), len(d), len(e)])
+        p = t[:-1] - t[1:]
+        if np.all(p == 0):
+            re = dict()
+            for i in range(t[0]):
+                re[i] = {'candidates_matched_path': a[i],
+                         'num_matched_peaks': sum([len(j) for j in d[i]]),
+                         'candi_info_all': c[i],
+                         'all_matched_peaks': d[i],
+                         'all_matched_adducts': e[i], 'all_nth_matching': b[i]}
+            return re
+        else:
+            raise ValueError('length of input must all be the same!')
+
+    def summarize_matching_re_all_db(self, mzc: Optional[bool] = True, mona: Optional[bool] = True,
+                                     iroa: Optional[bool] = True, reset=True):
+        if reset:
+            self.sum_matched_results_mzc = None
+            self.sum_matched_results_mona = None
+            self.sum_matched_results_iroa = None
+
+        if mzc:
+            a,b,c,d,e = GroupMatchingResult.summarize_all_matching_result(self.mzcloud_result)
+            self.sum_matched_results_mzc = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e)
+            total_peaks = []
+            for idx, result in self.sum_matched_results_mzc.items():
+                total_peaks.append(result['num_matched_peaks'])
+            self.total_matched_peaks_mzc = total_peaks
+
+        if mona:
+            a,b,c,d,e = GroupMatchingResult.summarize_all_matching_result(self.mona_result)
+            self.sum_matched_results_mona = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e)
+            total_peaks = []
+            for idx, result in self.sum_matched_results_mona.items():
+                total_peaks.append(result['num_matched_peaks'])
+            self.total_matched_peaks_mona = total_peaks
+
+        if iroa:
+            a,b,c,d,e = GroupMatchingResult.summarize_all_matching_result(self.iroa_result)
+            self.sum_matched_results_iroa = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e)
+            total_peaks = []
+            for idx, result in self.sum_matched_results_iroa.items():
+                total_peaks.append(result['num_matched_peaks'])
+            self.total_matched_peaks_iroa= total_peaks
+
