@@ -27,6 +27,7 @@ class MonaSpectrum(Spectrum):
     collision_energy: Optional[str] = field(default=None,repr=False)
     precursor: Optional[float] = field(default=None,repr=False)
     precursor_type: Optional[str] = field(default=None,repr=False)
+    matched_mzs: Optional[List[Tuple]] = field(default=None,repr=False)
     # def __post_init__(self):
     #     super().__post_init__()
 
@@ -181,14 +182,14 @@ class MonaDatabase:
 
     def find_match(self, target: Union[ReconstructedSpectrum, IROASpectrum, MZCloudSpectrum, MonaSpectrum],
                    rela_threshold: float = 1E-2,
-                   mode: str = 'Negative',
-                   cos_threshold: float = 1E-3,
-                   transform: Optional[Callable[[float], float]] = None, save_matched_mz=False,
-                   reset_matched_idx_mz=True
+                   # mode: str = 'Negative',
+                   cos_threshold: float = 0.1,
+                   transform: Optional[Callable[[float], float]] = None, save_matched_mz: bool = True,
+                   reset_matched_mzs: bool = True
                    ) -> List[Tuple[MonaCompounds, MonaSpectrum, float]]:
 
-        if mode not in ('Negative', 'Positive'):
-            raise ValueError("mode can only be 'Negative' or 'Positive'.")
+        # if mode not in ('Negative', 'Positive'):
+        #     raise ValueError("mode can only be 'Negative' or 'Positive'.")
 
         candidates: List[MonaCompounds] = []
 
@@ -204,11 +205,17 @@ class MonaDatabase:
         res = []
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
             for s in c.spectra_1 + c.spectra_2:
-                cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
-                                    save_matched_mz=save_matched_mz,
-                                    reset_matched_idx_mz=reset_matched_idx_mz)
+                # cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
+                #                     save_matched_mz=save_matched_mz,
+                #                     reset_matched_idx_mz=reset_matched_idx_mz)
+                if reset_matched_mzs:
+                    s.matched_mzs = None
+                cos, matched_mzs = target.cos(other=s,func=transform)
+                #matched_mzs: all the matched (mzs,abs_ints) in target
                 if cos > cos_threshold:
                     res.append((c, s, cos))
+                    if save_matched_mz:
+                        s.matched_mzs = matched_mzs
 
         res.sort(key=lambda x: x[2], reverse=True)
         cmp = set()

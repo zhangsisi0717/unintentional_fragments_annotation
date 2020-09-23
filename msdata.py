@@ -334,16 +334,22 @@ class Spectrum:
 
         return inta_t.dot(s.dot(intb_t))
 
-    def cos(self, other, ppm=20, matched_ppm=30, func=None, vectorize=True):
+    def cos(self, other, ppm=20, matched_ppm=60, func=None, vectorize=True):
         df = self.match_df(other=other, ppm=20, threshold=1E-8)
         cosine = self.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize) / np.sqrt(
             self.true_inner(other=self, ppm=ppm, func=func, vectorize=vectorize)
             * other.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize))
         if not df.empty:
-            matched_mzs = [self.spectrum_list[i] for i in df[df['ppm'] <= matched_ppm]['ia'].values]
+            matched_mzs = list()
+            for i in df[df['ppm'] <= matched_ppm]['ia'].values:
+                if self.spectrum_list[i] not in matched_mzs:
+                    matched_mzs.append(self.spectrum_list[i])
+            # matched_mzs = [self.spectrum_list[i] for i in df[df['ppm'] <= matched_ppm]['ia'].values]
             return cosine, matched_mzs
         else:
             return cosine, None
+
+
 
 
 

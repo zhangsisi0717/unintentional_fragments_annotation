@@ -25,6 +25,7 @@ class IROASpectrum(Spectrum):
     precursor: Optional[float] = field(default=None,repr=False)
     MolecularWeight: Optional[Numeric] = field(default=None,repr=False)
     InChIKey: Optional[str] = field(default=None, repr=False)
+    matched_mzs: Optional[List[Tuple]] = field(default=None,repr=False)
 
     def __post_init__(self):
         super().__post_init__()
@@ -159,8 +160,8 @@ class IROADataBase:
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
                    transform: Optional[Callable[[float], float]] = None,
-                   save_matched_mz=False,
-                   reset_matched_idx_mz=True) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
+                   save_matched_mz: bool = True,
+                   reset_matched_mzs: bool = True) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
             raise ValueError("mode can only be 'Negative' or 'Positive'.")
@@ -180,11 +181,18 @@ class IROADataBase:
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
             for s in c.spectra_1 + c.spectra_2:
                 if s.Polarity == mode:
-                    cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
-                                        save_matched_mz=save_matched_mz,
-                                        reset_matched_idx_mz=reset_matched_idx_mz)
+                    # cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
+                    #                     save_matched_mz=save_matched_mz,
+                    #                     reset_matched_idx_mz=reset_matched_idx_mz)
+                    if reset_matched_mzs:
+                        s.matched_mzs = None
+                    cos, matched_mzs = target.cos(other=s,func=transform)
+
                     if cos > cos_threshold:
                         res.append((c, s, cos))
+                        if save_matched_mz:
+                            s.matched_mzs = matched_mzs
+
         res.sort(key=lambda x: x[2], reverse=True)
 
         cmp = set()

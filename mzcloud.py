@@ -123,55 +123,55 @@ class MZCollection:
         self.min: List[float] = [self.min[i] for i in idx]
         self.max: List[float] = [self.max[i] for i in idx]
 
-    def match_score(self, recons_spectrum: Union[ReconstructedSpectrum, "MZCloudSpectrum"],
-                    transform: Optional[Callable[[float], float]] = None,
-                    threshold: float = 0.,
-                    mz_upperbound: float = 5.
-                    ) -> float:
-        """
-        Return the match score of a reconstructed spectrum
-        :param recons_spectrum:
-        :param transform:
-        :param threshold:
-        :param mz_upperbound:
-        :return: -1 if matching failed, or a number between 0 and 1.
-        """
-
-        if self.n == 0:  # self is empty
-            return -1.  # failed
-
-        if recons_spectrum.mz is None or recons_spectrum.relative_intensity is None:
-            raise ValueError("Invalid reconstructed spectrum")
-
-        matched_mass: float = 0.
-        unmatched_mass: float = 0.
-
-        if recons_spectrum.arg_max_mz is not None:
-            mz_ub = recons_spectrum.arg_max_mz + mz_upperbound
-        else:
-            mz_ub = np.inf
-
-        for mz, rel_int in zip(recons_spectrum.mz, recons_spectrum.relative_intensity):
-
-            if mz > mz_ub:
-                continue  # skip
-
-            if rel_int < threshold:  # skip
-                continue
-            if transform is None:
-                inc = rel_int
-            else:
-                inc = transform(rel_int)
-            if mz in self:  # got a matched fragments
-                matched_mass += inc
-            else:
-                unmatched_mass += inc
-
-        total_mass: float = matched_mass + unmatched_mass
-        if total_mass == 0.:
-            return -1.  # failed
-        else:
-            return matched_mass / total_mass
+    # def match_score(self, recons_spectrum: Union[ReconstructedSpectrum, "MZCloudSpectrum"],
+    #                 transform: Optional[Callable[[float], float]] = None,
+    #                 threshold: float = 0.,
+    #                 mz_upperbound: float = 5.
+    #                 ) -> float:
+    #     """
+    #     Return the match score of a reconstructed spectrum
+    #     :param recons_spectrum:
+    #     :param transform:
+    #     :param threshold:
+    #     :param mz_upperbound:
+    #     :return: -1 if matching failed, or a number between 0 and 1.
+    #     """
+    #
+    #     if self.n == 0:  # self is empty
+    #         return -1.  # failed
+    #
+    #     if recons_spectrum.mz is None or recons_spectrum.relative_intensity is None:
+    #         raise ValueError("Invalid reconstructed spectrum")
+    #
+    #     matched_mass: float = 0.
+    #     unmatched_mass: float = 0.
+    #
+    #     if recons_spectrum.arg_max_mz is not None:
+    #         mz_ub = recons_spectrum.arg_max_mz + mz_upperbound
+    #     else:
+    #         mz_ub = np.inf
+    #
+    #     for mz, rel_int in zip(recons_spectrum.mz, recons_spectrum.relative_intensity):
+    #
+    #         if mz > mz_ub:
+    #             continue  # skip
+    #
+    #         if rel_int < threshold:  # skip
+    #             continue
+    #         if transform is None:
+    #             inc = rel_int
+    #         else:
+    #             inc = transform(rel_int)
+    #         if mz in self:  # got a matched fragments
+    #             matched_mass += inc
+    #         else:
+    #             unmatched_mass += inc
+    #
+    #     total_mass: float = matched_mass + unmatched_mass
+    #     if total_mass == 0.:
+    #         return -1.  # failed
+    #     else:
+    #         return matched_mass / total_mass
 
 
 @dataclass()
@@ -340,6 +340,7 @@ class MZCloudSpectrum(Spectrum):
     threshold: Optional[float] = field(default=None, repr=False, init=False)
 
     MZC_env: Optional["MZCloud"] = field(default=None, repr=False)
+    matched_mzs: Optional[List[Tuple]] = field(default=None,repr=False)
 
     def __post_init__(self):
         self.id = self.Id
@@ -686,8 +687,8 @@ class MZCloud:
                    mode: str = 'Negative',
                    cos_threshold: float = 1E-3,
                    transform: Optional[Callable[[float], float]] = None,
-                   save_matched_mz=True,
-                   reset_matched_idx_mz=True
+                   save_matched_mz: bool = True,
+                   reset_matched_mzs: bool = True
                    ) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
@@ -709,11 +710,18 @@ class MZCloud:
             for t in c.spectra_1 + c.spectra_2:
                 for s in t:
                     if s.Polarity == mode:
-                        cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
-                                            save_matched_mz=save_matched_mz,
-                                            reset_matched_idx_mz=reset_matched_idx_mz)
+                        # cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
+                        #                     save_matched_mz=save_matched_mz,
+                        #                     reset_matched_idx_mz=reset_matched_idx_mz)
+                        if reset_matched_mzs:
+                            s.matched_mzs = None
+                        cos, matched_mzs = target.cos(other=s,func=transform)
+
                         if cos > cos_threshold:
                             res.append((c, s, cos))
+                            if save_matched_mz:
+                                s.matched_mzs = matched_mzs
+
         res.sort(key=lambda x: x[2], reverse=True)
 
         cmp = set()
