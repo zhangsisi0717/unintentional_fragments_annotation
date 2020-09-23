@@ -12,6 +12,7 @@ from binned_vec import *
 import copy
 
 
+
 class DimensionMismatchError(Exception):
     def __init__(self, message=None):
         self.message = message
@@ -277,6 +278,73 @@ class Spectrum:
             msg = "not a valid spectrum"
             warnings.warn(msg)
             return None, None, None
+
+    def match_matrix(self, other, ppm: Optional[float] = 20) -> Optional[np.matrix]:
+        if np.all(self.mz) and np.all(other.mz):
+            mza_log = np.log(self.mz)
+            mzb_log = np.log(other.mz)
+
+            sigma = 2 * np.log(1 + ppm * 1E-6)
+
+            diff = np.subtract.outer(mza_log, mzb_log)
+
+            s = np.exp(- (diff / sigma) ** 2)
+
+            return s
+        else:
+            raise ValueError('mzs of spectrum is None !')
+
+    def match_list(self, other, ppm=20, threshold=1E-8):
+
+        s = self.match_matrix(other=other, ppm=ppm)
+
+        assert len(s.shape) == 2, "mza, mzb must be 1-d ndarray"
+
+        indices = np.argwhere(s > threshold)
+
+        return [{'ia': i, 'ib': j, 'mza': self.mz[i], 'mzb': other.mz[j],'ppm': 1E6 * np.abs(self.mz[i] - other.mz[j]) / self.mz[i], 'coeff': s[i][j]} for i, j in indices]
+
+    def match_df(self, other, ppm=20, threshold=1E-8):
+        from pandas import DataFrame
+        return DataFrame(self.match_list(other=other, ppm=ppm, threshold=threshold))
+
+    def true_inner(self,other, ppm: Optional[float] = 20, func=None, vectorize=True):
+
+        s = self.match_matrix(other=other, ppm=ppm)
+
+        if func is not None:
+            try:
+
+                if not vectorize:
+                    raise TypeError
+
+                inta_t = func(self.intensity)
+                intb_t = func(other.intensity)
+
+            except TypeError:
+
+                inta_t = np.array([func(i) for i in self.intensity])
+
+                intb_t = np.array([func(i) for i in other.intensity])
+
+        else:
+
+            inta_t = self.intensity
+            intb_t = other.intensity
+
+        return inta_t.dot(s.dot(intb_t))
+
+    def cos(self, other, ppm=20, matched_ppm=30, func=None, vectorize=True):
+        df = self.match_df(other=other, ppm=20, threshold=1E-8)
+        cosine = self.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize) / np.sqrt(
+            self.true_inner(other=self, ppm=ppm, func=func, vectorize=vectorize)
+            * other.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize))
+        if not df.empty:
+            matched_mzs = [self.spectrum_list[i] for i in df[df['ppm'] <= matched_ppm]['ia'].values]
+            return cosine, matched_mzs
+        else:
+            return cosine, None
+
 
 
 @dataclass
