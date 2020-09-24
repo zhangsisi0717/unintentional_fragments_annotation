@@ -125,6 +125,7 @@ class Spectrum:
     ms_level: Optional[str] = field(default=None, repr=False)
 
     spectrum_list: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
+    spectrum_list_abs: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
     mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     relative_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
@@ -178,6 +179,8 @@ class Spectrum:
 
         self.bin_vec = BinnedSparseVector(ppm=self.bin_ppm)
         self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity)
+        if not self.spectrum_list_abs:
+            self.spectrum_list_abs = self.spectrum_list
 
     def compare_spectrum_plot(self, other,
                               dpi: Numeric = 200, figsize: Tuple[Numeric, Numeric] = (8, 6),
@@ -308,7 +311,7 @@ class Spectrum:
         from pandas import DataFrame
         return DataFrame(self.match_list(other=other, ppm=ppm, threshold=threshold))
 
-    def true_inner(self,other, ppm: Optional[float] = 20, func=None, vectorize=True):
+    def true_inner(self,other, ppm: Optional[float] = 30, func=None, vectorize=True):
 
         s = self.match_matrix(other=other, ppm=ppm)
 
@@ -318,8 +321,8 @@ class Spectrum:
                 if not vectorize:
                     raise TypeError
 
-                inta_t = func(self.intensity)
-                intb_t = func(other.intensity)
+                inta_t = np.array([func(i) for i in self.intensity])
+                intb_t = np.array([func(i) for i in other.intensity])
 
             except TypeError:
 
@@ -331,10 +334,9 @@ class Spectrum:
 
             inta_t = self.intensity
             intb_t = other.intensity
-
         return inta_t.dot(s.dot(intb_t))
 
-    def cos(self, other, ppm=20, matched_ppm=60, func=None, vectorize=True):
+    def cos(self, other, ppm=40, matched_ppm=60, func=None, vectorize=True):
         df = self.match_df(other=other, ppm=20, threshold=1E-8)
         cosine = self.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize) / np.sqrt(
             self.true_inner(other=self, ppm=ppm, func=func, vectorize=vectorize)
@@ -342,24 +344,21 @@ class Spectrum:
         if not df.empty:
             matched_mzs = list()
             for i in df[df['ppm'] <= matched_ppm]['ia'].values:
-                if self.spectrum_list[i] not in matched_mzs:
-                    matched_mzs.append(self.spectrum_list[i])
+                if self.spectrum_list_abs[i] not in matched_mzs:
+                    matched_mzs.append(self.spectrum_list_abs[i])
             # matched_mzs = [self.spectrum_list[i] for i in df[df['ppm'] <= matched_ppm]['ia'].values]
             return cosine, matched_mzs
         else:
             return cosine, None
 
 
-
-
-
 @dataclass
 class ReconstructedSpectrum(Spectrum):
-    spectrum_label: str = tuple(['Reconstructed', 'Reference'])
+    spectrum_label: str = field(default=tuple(['Reconstructed', 'Reference']), repr=False)
     spectrum_list_abs: Optional[List[tuple]] = field(default_factory=list, repr=False)
     intensity_abs_recon: Optional[list] = field(default_factory=list, repr=False)
-    matched_mz: Optional[List[tuple]] = field(default_factory=list, repr=False)
-    mis_matched_mz: Optional[List[tuple]] = field(default_factory=list, repr=False)
+    matched_mz: Optional[List[Tuple]] = field(default_factory=list, repr=False)
+    mis_matched_mz: Optional[List[Tuple]] = field(default_factory=list, repr=False)
     matched_isotope_mz: Optional[dict] = field(default_factory=dict, repr=False)
     matched_adduction: Optional[dict] = field(default_factory=dict, repr=False)
     matched_multimer: Optional[dict] = field(default_factory=dict, repr=False)
@@ -374,26 +373,35 @@ class ReconstructedSpectrum(Spectrum):
             self.bin_vec = BinnedSparseVector()
             self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity_abs_recon)
 
+    # def gen_matched_mz(self, other: [Spectrum], reset_matched_mz=True):
+    #     if reset_matched_mz:
+    #         self.matched_mz = []
+    #         self.mis_matched_mz = []
+    #     recon_matched_mz = []
+    #     recon_mis_matched_mz = []
+    #     if other.bin_vec.matched_idx_mz:
+    #         for idx in other.bin_vec.matched_idx_mz['matched_idx']:
+    #             for mz, idx_int in self.bin_vec.mz_idx_dic.items():
+    #                 if idx_int[0] == idx:
+    #                     recon_matched_mz.append((mz, idx_int[1]))
+    #
+    #         for mz, idx_int in self.bin_vec.mz_idx_dic.items():
+    #             if (mz, idx_int[1]) not in recon_matched_mz:
+    #                 recon_mis_matched_mz.append((mz, idx_int[1]))
+    #
+    #         self.matched_mz = recon_matched_mz
+    #         self.mis_matched_mz = recon_mis_matched_mz
+    #
+    #     return recon_matched_mz
+
     def gen_matched_mz(self, other: [Spectrum], reset_matched_mz=True):
         if reset_matched_mz:
-            self.matched_mz = []
-            self.mis_matched_mz = []
-        recon_matched_mz = []
-        recon_mis_matched_mz = []
-        if other.bin_vec.matched_idx_mz:
-            for idx in other.bin_vec.matched_idx_mz['matched_idx']:
-                for mz, idx_int in self.bin_vec.mz_idx_dic.items():
-                    if idx_int[0] == idx:
-                        recon_matched_mz.append((mz, idx_int[1]))
-
-            for mz, idx_int in self.bin_vec.mz_idx_dic.items():
-                if (mz, idx_int[1]) not in recon_matched_mz:
-                    recon_mis_matched_mz.append((mz, idx_int[1]))
-
-            self.matched_mz = recon_matched_mz
-            self.mis_matched_mz = recon_mis_matched_mz
-
-        return recon_matched_mz
+            self.matched_mz = list()
+            self.mis_matched_mz = list()
+            self.matched_mz = [tuple(i) for i in other.matched_mzs]
+            for mz, ints in self.spectrum_list_abs:
+                if (mz, ints) not in self.mis_matched_mz:
+                    self.mis_matched_mz.append((mz, ints))
 
     def check_isotope(self, ppm=30, reset=True):
         if reset:
@@ -410,7 +418,8 @@ class ReconstructedSpectrum(Spectrum):
                                 if not isotope_mz.get((mis_mz, mis_intensity)):
                                     isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
                                     self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                    self.matched_mz.append((mis_mz, mis_intensity))
+                                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                                        self.matched_mz.append((mis_mz, mis_intensity))
 
             self.matched_isotope_mz = isotope_mz
         return isotope_mz
@@ -450,7 +459,8 @@ class ReconstructedSpectrum(Spectrum):
                     for ad, mz in adduction_list[mode].items():
                         if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
                             matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
-                            self.matched_mz.append(mis_mz)
+                            if mis_mz not in self.matched_mz:
+                                self.matched_mz.append(mis_mz)
                             self.mis_matched_mz.remove(mis_mz)
                 self.matched_adduction = matched_adduction
 
@@ -472,7 +482,8 @@ class ReconstructedSpectrum(Spectrum):
                                 self.matched_multimer[(mis_mz, mis_intensity)] =\
                                     ('dimer of frag/precur', (mz, intensity))
                                 self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                self.matched_mz.append((mis_mz, mis_intensity))
+                                if (mis_mz,mis_intensity) not in self.matched_mz:
+                                    self.matched_mz.append((mis_mz, mis_intensity))
 
                             if (abs(molecular_weight * 2 - 1.0073118899999827 - mis_mz) / (
                                     molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
@@ -481,7 +492,8 @@ class ReconstructedSpectrum(Spectrum):
                                         self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
                                                                                           molecular_weight)
                                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                        self.matched_mz.append((mis_mz, mis_intensity))
+                                        if (mis_mz,mis_intensity) not in self.matched_mz:
+                                            self.matched_mz.append((mis_mz, mis_intensity))
                 elif mode == 'positive':
                     for mz, intensity in self.matched_mz:
                         for mis_mz, mis_intensity in self.mis_matched_mz:
@@ -490,7 +502,8 @@ class ReconstructedSpectrum(Spectrum):
                                 self.matched_multimer[(mis_mz, mis_intensity)] = (
                                 'dimer of frag/precur', (mz, intensity))
                                 self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                self.matched_mz.append((mis_mz, mis_intensity))
+                                if (mis_mz,mis_intensity) not in self.matched_mz:
+                                    self.matched_mz.append((mis_mz, mis_intensity))
 
                             if (abs(molecular_weight * 2 + 1.0073118899999827 - mis_mz) / (
                                     molecular_weight * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
@@ -499,15 +512,22 @@ class ReconstructedSpectrum(Spectrum):
                                         self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
                                                                                           molecular_weight)
                                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                        self.matched_mz.append((mis_mz, mis_intensity))
+                                        if (mis_mz,mis_intensity) not in self.matched_mz:
+                                            self.matched_mz.append((mis_mz, mis_intensity))
 
         return self.matched_multimer
 
     def generate_sub_recon_spec(self, reset: bool = True):
         if reset:
             self.sub_recon_spec = None
-
-        self.sub_recon_spec = ReconstructedSpectrum(spectrum_list=self.mis_matched_mz)
+            new = self.mis_matched_mz.copy()
+            new.sort(reverse=True, key=lambda x: x[1])
+            mis_matched_rela = [list(i) for i in self.mis_matched_mz]
+            if new:
+                max_val = new[0][1]
+                for i in range(len(mis_matched_rela)):
+                    mis_matched_rela[i][1] = (mis_matched_rela[i][1]) / max_val
+            self.sub_recon_spec = ReconstructedSpectrum(spectrum_list=mis_matched_rela,spectrum_list_abs=self.mis_matched_mz)
 
         return self.sub_recon_spec
 

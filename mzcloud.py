@@ -370,6 +370,7 @@ class MZCloudSpectrum(Spectrum):
                 self.mz = mz[self.is_not_nan]
                 self.intensity = intensity[self.is_not_nan]
                 self.spectrum_list = list(zip(self.mz, self.intensity))
+                self.spectrum_list_abs = self.spectrum_list
                 self.accuracy = accuracy[self.is_not_nan]
                 self.resolution = resolution[self.is_not_nan]
                 self.max_intensity = np.max(self.intensity)

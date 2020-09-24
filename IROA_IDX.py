@@ -30,6 +30,7 @@ class IROASpectrum(Spectrum):
     def __post_init__(self):
         super().__post_init__()
         self.Polarity = self.mode
+        self.spectrum_list_abs = self.spectrum_list
 
 
 @dataclass

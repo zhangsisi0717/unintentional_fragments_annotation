@@ -48,6 +48,8 @@ class MZCloudMatchingResult:
                     if self.database:
                         self.current_raw_matching_result = self.database.find_match(target=self.current_recons_spec,
                                                                                     save_matched_mz=True,
+                                                                                    reset_matched_mzs=True,
+                                                                                    cos_threshold=0.01,
                                                                                     transform=math.sqrt)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
@@ -98,6 +100,8 @@ class MoNAMatchingResult(MZCloudMatchingResult):
                     if self.database:
                         self.current_raw_matching_result = self.database.find_match(target=self.current_recons_spec,
                                                                                     save_matched_mz=True,
+                                                                                    cos_threshold=0.01,
+                                                                                    reset_matched_mzs=True,
                                                                                     transform=math.sqrt)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
@@ -147,6 +151,8 @@ class IROAMatchingResult(MZCloudMatchingResult):
                     if self.database:
                         self.current_raw_matching_result = self.database.find_match(target=self.current_recons_spec,
                                                                                     save_matched_mz=True,
+                                                                                    cos_threshold=0.01,
+                                                                                    reset_matched_mzs=True,
                                                                                     transform=math.sqrt)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:

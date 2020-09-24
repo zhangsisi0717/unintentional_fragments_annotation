@@ -74,7 +74,7 @@ for i in range(0,1):
                                  base_index_relative=i,
                                  base_index_abs=m.base_index[i])
     result.gen_mzc_matching_result(total_layer_matching=3,n_candidates_further_matched=2,database=mzc)
-    result.gen_mona_matching_result(total_layer_matching=3,n_candidates_further_matched=2,database=mona) ##start from 0th match##
+    result.gen_mona_matching_result(total_layer_matching=2,n_candidates_further_matched=2,database=mona) ##start from 0th match##
     result.gen_iroa_matching_result(total_layer_matching=2,n_candidates_further_matched=1,database=iroa)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
