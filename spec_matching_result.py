@@ -9,6 +9,7 @@ import copy
 
 @dataclass
 class MZCloudMatchingResult:
+    transform: Optional[math.sqrt] = field(default=None,repr=False)
     database: Optional[MZCloud] = field(default=None, repr=False)
     nth_candidate: Optional[int] = field(default=None, repr=True)  # if 0th_match, then nth_candidate is None
     nth_match: Optional[int] = field(default=None, repr=True)  # nth recursive match#
@@ -50,7 +51,7 @@ class MZCloudMatchingResult:
                                                                                     save_matched_mz=True,
                                                                                     reset_matched_mzs=True,
                                                                                     cos_threshold=0.01,
-                                                                                    transform=math.sqrt)
+                                                                                    transform=self.transform)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
@@ -102,7 +103,7 @@ class MoNAMatchingResult(MZCloudMatchingResult):
                                                                                     save_matched_mz=True,
                                                                                     cos_threshold=0.01,
                                                                                     reset_matched_mzs=True,
-                                                                                    transform=math.sqrt)
+                                                                                    transform=self.transform)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
@@ -153,7 +154,7 @@ class IROAMatchingResult(MZCloudMatchingResult):
                                                                                     save_matched_mz=True,
                                                                                     cos_threshold=0.01,
                                                                                     reset_matched_mzs=True,
-                                                                                    transform=math.sqrt)
+                                                                                    transform=self.transform)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
@@ -216,7 +217,8 @@ class GroupMatchingResult:
                                 n_candidates_further_matched: Optional[int] = 1,
                                 database: [MZCloud] = None,
                                 base_index_abs: Optional[int] = base_index_abs,
-                                base_index_relative: Optional[int] = base_index_relative) -> MZCloudMatchingResult:
+                                base_index_relative: Optional[int] = base_index_relative,
+                                transform = None) -> MZCloudMatchingResult:
 
         if self.matched_against_mzcloud:
             result = MZCloudMatchingResult(current_recons_spec=self.recons_spec,
@@ -224,7 +226,8 @@ class GroupMatchingResult:
                                            n_candidates_further_matched=n_candidates_further_matched,
                                            database=database,
                                            base_index_abs=base_index_abs,
-                                           base_index_relative=base_index_relative)
+                                           base_index_relative=base_index_relative,
+                                           transform=transform)
 
             self.mzcloud_result = result
 
@@ -232,7 +235,8 @@ class GroupMatchingResult:
                                  n_candidates_further_matched: Optional[int] = 1,
                                  database: [MonaDatabase] = None,
                                  base_index_abs: Optional[int] = base_index_abs,
-                                 base_index_relative: Optional[int] = base_index_relative) -> MoNAMatchingResult:
+                                 base_index_relative: Optional[int] = base_index_relative,
+                                 transform=None) -> MoNAMatchingResult:
 
         if self.matched_against_mona:
             result = MoNAMatchingResult(current_recons_spec=self.recons_spec,
@@ -240,7 +244,8 @@ class GroupMatchingResult:
                                         n_candidates_further_matched=n_candidates_further_matched,
                                         database=database,
                                         base_index_abs=base_index_abs,
-                                        base_index_relative=base_index_relative)
+                                        base_index_relative=base_index_relative,
+                                        transform=transform)
 
             self.mona_result = result
 
@@ -248,7 +253,8 @@ class GroupMatchingResult:
                                  n_candidates_further_matched: Optional[int] = 1,
                                  database: [IROADataBase] = None,
                                  base_index_abs: Optional[int] = base_index_abs,
-                                 base_index_relative: Optional[int] = base_index_relative) -> IROAMatchingResult:
+                                 base_index_relative: Optional[int] = base_index_relative,
+                                 transform=None) -> IROAMatchingResult:
 
         if self.matched_against_iroa:
             result = IROAMatchingResult(current_recons_spec=self.recons_spec,
@@ -256,7 +262,8 @@ class GroupMatchingResult:
                                         n_candidates_further_matched=n_candidates_further_matched,
                                         database=database,
                                         base_index_abs=base_index_abs,
-                                        base_index_relative=base_index_relative)
+                                        base_index_relative=base_index_relative,
+                                        transform=transform)
 
             self.iroa_result = result
 

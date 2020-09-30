@@ -68,18 +68,18 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 final_matching_results = []
 import datetime
 start=datetime.datetime.now()
-for i in range(3,10):
+for i in range(0,1):
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
     result = GroupMatchingResult(recons_spec=spec_2,
                                  base_index_relative=i,
                                  base_index_abs=m.base_index[i])
-    result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc)
-    result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona) ##start from 0th match##
-    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=iroa)
+    # result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc)
+    # result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona) ##start from 0th match##
+    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=1,database=iroa)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
-    result.summarize_matching_re_all_db()
+    result.summarize_matching_re_all_db(mzc=False,mona=False,iroa=True)
     final_matching_results.append(result)
 end=datetime.datetime.now()
 print(end-start)
