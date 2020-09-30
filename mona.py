@@ -205,17 +205,27 @@ class MonaDatabase:
         res = []
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
             for s in c.spectra_1 + c.spectra_2:
+                if_choose_s = False
                 # cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
                 #                     save_matched_mz=save_matched_mz,
                 #                     reset_matched_idx_mz=reset_matched_idx_mz)
+                if s.precursor:
+                    for mz in target.mz:
+                        if (abs(s.precursor-mz)/s.precursor) * 10E6 <= 70:
+                            if_choose_s = True
+                if not s.precursor:
+                    if_choose_s = True
+
                 if reset_matched_mzs:
                     s.matched_mzs = None
-                cos, matched_mzs = target.cos(other=s,func=transform)
+
+                if if_choose_s:
+                    cos, matched_mzs = target.cos(other=s,func=transform)
                 #matched_mzs: all the matched (mzs,abs_ints) in target
-                if cos > cos_threshold:
-                    res.append((c, s, cos))
-                    if save_matched_mz:
-                        s.matched_mzs = matched_mzs
+                    if cos > cos_threshold:
+                        res.append((c, s, cos))
+                        if save_matched_mz:
+                            s.matched_mzs = matched_mzs
 
         res.sort(key=lambda x: x[2], reverse=True)
         cmp = set()

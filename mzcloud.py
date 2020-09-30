@@ -711,17 +711,26 @@ class MZCloud:
             for t in c.spectra_1 + c.spectra_2:
                 for s in t:
                     if s.Polarity == mode:
+                        if_choose_s = False
                         # cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
                         #                     save_matched_mz=save_matched_mz,
                         #                     reset_matched_idx_mz=reset_matched_idx_mz)
+                        if s.PrecursorPeaks:
+                            for mz in target.mz:
+                                if (abs(s.PrecursorPeaks[0]['MZ']-mz)/s.PrecursorPeaks[0]['MZ']) * 10E6 <= 70:
+                                    if_choose_s = True
+                        if not s.PrecursorPeaks:
+                            if_choose_s = True
+
                         if reset_matched_mzs:
                             s.matched_mzs = None
-                        cos, matched_mzs = target.cos(other=s,func=transform)
+                        if if_choose_s:
+                            cos, matched_mzs = target.cos(other=s,func=transform)
 
-                        if cos > cos_threshold:
-                            res.append((c, s, cos))
-                            if save_matched_mz:
-                                s.matched_mzs = matched_mzs
+                            if cos > cos_threshold:
+                                res.append((c, s, cos))
+                                if save_matched_mz:
+                                    s.matched_mzs = matched_mzs
 
         res.sort(key=lambda x: x[2], reverse=True)
 

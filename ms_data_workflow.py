@@ -6,7 +6,8 @@ from msdata import *
 import copy
 
 # m = MSData.from_files('3T3_pro','/../../../Data/3T3_pro')
-m = MSData.from_files('3T3_pro','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3_pro')
+# m = MSData.from_files('3T3_pro','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3_pro')
+m = MSData.from_files('IROA_MS1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_09162020/IROA_MS1_neg')
 m.apply_smooth_conv(m.gaussian_kernel(4, 12), rt_range=(0., np.inf))
 
 #peak_detection_options = {'height': 1E-2, 'range_threshold': 1E-4, 'prominence': 1E-2}
@@ -15,7 +16,7 @@ m.apply_smooth_conv(m.gaussian_kernel(4, 12), rt_range=(0., np.inf))
 #delta = (rts[1:] - rts[:-1]).mean(), width = width / delta
 
 #afer peak_detection:range_threshold = peak_heights * range_threshold, beyong range,set to 0
-peak_detection_options = {'height': 0.1, 'range_threshold': 0.05, 'prominence': 0.1}
+peak_detection_options = {'height': 0.1, 'range_threshold': 0.01, 'prominence': 0.1}
 m.perform_feature_peak_detection(**peak_detection_options)
 m.remove_duplicates_detection()
 # m.perform_feature_peak_detection()
@@ -67,15 +68,15 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 final_matching_results = []
 import datetime
 start=datetime.datetime.now()
-for i in range(0,1):
+for i in range(3,10):
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
     result = GroupMatchingResult(recons_spec=spec_2,
                                  base_index_relative=i,
                                  base_index_abs=m.base_index[i])
-    result.gen_mzc_matching_result(total_layer_matching=3,n_candidates_further_matched=2,database=mzc)
-    result.gen_mona_matching_result(total_layer_matching=2,n_candidates_further_matched=2,database=mona) ##start from 0th match##
-    result.gen_iroa_matching_result(total_layer_matching=2,n_candidates_further_matched=1,database=iroa)
+    result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc)
+    result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona) ##start from 0th match##
+    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=iroa)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
     result.summarize_matching_re_all_db()
@@ -144,5 +145,14 @@ with open('3T3_pro_re_mona.pkl', "wb") as write_file:
 with open('iroa_ms1_matching_result_01.pkl','wb') as f:
     pkl.dump(iroa_ms1_matching_result_1,f)
 
+test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative'
+with open(test_path+'/'+'iroa_ms1_matching_result_01.pkl','wb') as f:
+    pkl.dump(final_matching_results[0].sum_matched_results_iroa[0],f)
+
+
+with open(test_path +'/'+'iroa_ms1_matching_result_01.pkl','rb') as f:
+    temp = pkl.load(f)
+
+########
 
 
