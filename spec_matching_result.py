@@ -385,12 +385,14 @@ class GroupMatchingResult:
             matched_candi_info = [[]]
             matched_peaks = [[]]
             matched_adducts = [[]]
-            return nth_candidate, nth_matching, matched_candi_info, matched_peaks, matched_adducts
+            candi_list_each_layer = [[]]
+            return nth_candidate, nth_matching, matched_candi_info, matched_peaks, matched_adducts,candi_list_each_layer
 
         total_nth_candidate,total_nth_matching,total_candi_info = [],[],[]
         total_matched_peaks, total_matched_adducts = [],[]
+        all_candi_list_each_layer = []
         for _,candi in result.n_candidates_further_match_r.items():
-            nth_candidate, nth_matching, matched_candi_info, matched_peaks,matched_adducts = \
+            nth_candidate, nth_matching, matched_candi_info, matched_peaks,matched_adducts,candi_list_each_layer = \
                 GroupMatchingResult.summarize_all_matching_result(candi)
             for i in nth_candidate:
                 temp_candidate = [candi.nth_candidate] + i
@@ -402,18 +404,30 @@ class GroupMatchingResult:
                 temp_matched_candi_info = [candi.cur_candidate_info] + i
                 total_candi_info.append(temp_matched_candi_info)
             for i in matched_peaks:
-                temp_total_matched_peaks = [candi.parent_matched_mz] + i
+                temp_total_matched_peaks = [candi.parent_recons_spec.matched_mz] + i
                 total_matched_peaks.append(temp_total_matched_peaks)
             for i in matched_adducts:
                 temp_matched_adducts = [{'matched_multimer':candi.parent_recons_spec.matched_multimer,
                                          'matched_isotope_mz':candi.parent_recons_spec.matched_isotope_mz,
                                          'matched_adducts':candi.parent_recons_spec.matched_adduction}] + i
                 total_matched_adducts.append(temp_matched_adducts)
-        return total_nth_candidate,total_nth_matching,total_candi_info,total_matched_peaks, total_matched_adducts
+            for i in candi_list_each_layer:
+                temp_candi_list_each_layer = [candi.current_raw_matching_result] + i
+                all_candi_list_each_layer.append(temp_candi_list_each_layer)
+
+        if result.parent_matched_mz == 'root':
+            final_layer_list = []
+            for i in all_candi_list_each_layer:
+                temp = [result.current_raw_matching_result] + i
+                final_layer_list.append(temp)
+            all_candi_list_each_layer = final_layer_list
+
+        return total_nth_candidate,total_nth_matching,total_candi_info,\
+               total_matched_peaks, total_matched_adducts,all_candi_list_each_layer
 
     @staticmethod
-    def gen_dic_for_matching_result(a: List, b: List, c: List, d: List, e: List):
-        t = np.array([len(a), len(b), len(c), len(d), len(e)])
+    def gen_dic_for_matching_result(a: List, b: List, c: List, d: List, e: List,f:List):
+        t = np.array([len(a), len(b), len(c), len(d), len(e),len(f)])
         p = t[:-1] - t[1:]
         if np.all(p == 0):
             re = dict()
@@ -422,9 +436,11 @@ class GroupMatchingResult:
                          'num_matched_peaks': sum([len(j) for j in d[i]]),
                          'candi_info_all': c[i],
                          'all_matched_peaks': d[i],
-                         'all_matched_adducts': e[i], 'all_nth_matching': b[i]}
+                         'all_matched_adducts': e[i], 'all_nth_matching': b[i],
+                          'candi_list_each_matching_layer':f[i]}
             return re
         else:
+            print(f)
             raise ValueError('length of input must all be the same!')
 
     def summarize_matching_re_all_db(self, mzc: Optional[bool] = True, mona: Optional[bool] = True,
@@ -435,24 +451,24 @@ class GroupMatchingResult:
             self.sum_matched_results_iroa = None
 
         if mzc:
-            a,b,c,d,e = GroupMatchingResult.summarize_all_matching_result(self.mzcloud_result)
-            self.sum_matched_results_mzc = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e)
+            a,b,c,d,e,f = GroupMatchingResult.summarize_all_matching_result(self.mzcloud_result)
+            self.sum_matched_results_mzc = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e,f)
             total_peaks = []
             for idx, result in self.sum_matched_results_mzc.items():
                 total_peaks.append(result['num_matched_peaks'])
             self.total_matched_peaks_mzc = total_peaks
 
         if mona:
-            a,b,c,d,e = GroupMatchingResult.summarize_all_matching_result(self.mona_result)
-            self.sum_matched_results_mona = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e)
+            a,b,c,d,e,f = GroupMatchingResult.summarize_all_matching_result(self.mona_result)
+            self.sum_matched_results_mona = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e,f)
             total_peaks = []
             for idx, result in self.sum_matched_results_mona.items():
                 total_peaks.append(result['num_matched_peaks'])
             self.total_matched_peaks_mona = total_peaks
 
         if iroa:
-            a,b,c,d,e = GroupMatchingResult.summarize_all_matching_result(self.iroa_result)
-            self.sum_matched_results_iroa = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e)
+            a,b,c,d,e,f = GroupMatchingResult.summarize_all_matching_result(self.iroa_result)
+            self.sum_matched_results_iroa = GroupMatchingResult.gen_dic_for_matching_result(a,b,c,d,e,f)
             total_peaks = []
             for idx, result in self.sum_matched_results_iroa.items():
                 total_peaks.append(result['num_matched_peaks'])

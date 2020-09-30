@@ -398,10 +398,13 @@ class ReconstructedSpectrum(Spectrum):
         if reset_matched_mz:
             self.matched_mz = list()
             self.mis_matched_mz = list()
-            self.matched_mz = [tuple(i) for i in other.matched_mzs]
-            for mz, ints in self.spectrum_list_abs:
-                if (mz, ints) not in self.matched_mz and (mz,ints) not in self.mis_matched_mz:
-                    self.mis_matched_mz.append((mz, ints))
+            if other.matched_mzs:
+                self.matched_mz = [tuple(i) for i in other.matched_mzs]
+                for mz, ints in self.spectrum_list_abs:
+                    if (mz, ints) not in self.matched_mz and (mz,ints) not in self.mis_matched_mz:
+                        self.mis_matched_mz.append((mz, ints))
+            else:
+                self.mis_matched_mz = self.spectrum_list_abs
 
     def check_isotope(self, ppm=30, reset=True):
         if reset:

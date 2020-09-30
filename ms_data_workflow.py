@@ -65,22 +65,29 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 #     print(v)
 
 # ###check base group and find_match within each group and plot###
+test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative'
 final_matching_results = []
+save_index = [30,60,90,100,130,153]
 import datetime
 start=datetime.datetime.now()
-for i in range(0,1):
+for i in range(0,154):
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
     result = GroupMatchingResult(recons_spec=spec_2,
                                  base_index_relative=i,
                                  base_index_abs=m.base_index[i])
-    # result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc)
-    # result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona) ##start from 0th match##
-    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=1,database=iroa)
+    result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc,transform=None)
+    result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona,transform=None) ##start from 0th match##
+    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=iroa,transform=None)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
-    result.summarize_matching_re_all_db(mzc=False,mona=False,iroa=True)
+    result.summarize_matching_re_all_db(mzc=True,mona=True,iroa=True)
     final_matching_results.append(result)
+    if i in save_index:
+        fi_re=[[j.sum_matched_results_iroa, j.sum_matched_results_mona,j.sum_matched_results_mzc] for j in final_matching_results]
+        name = 'matchre_neg_stds_non_trans' + '_'+ str(i) +'.pkl'
+        with open(test_path+'/' + name,'wb') as f:
+            pkl.dump(fi_re,f)
 end=datetime.datetime.now()
 print(end-start)
 #############################################################
@@ -146,8 +153,8 @@ with open('iroa_ms1_matching_result_01.pkl','wb') as f:
     pkl.dump(iroa_ms1_matching_result_1,f)
 
 test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative'
-with open(test_path+'/'+'iroa_ms1_matching_result_01.pkl','wb') as f:
-    pkl.dump(final_matching_results[0].sum_matched_results_iroa[0],f)
+with open(test_path+'/'+'base_index.pkl','wb') as f:
+    pkl.dump(m.base_index,f)
 
 
 with open(test_path +'/'+'iroa_ms1_matching_result_01.pkl','rb') as f:
