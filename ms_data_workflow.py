@@ -3,12 +3,13 @@ from MoNA_workflow import *
 from mz_cloud_workflow import *
 from spec_matching_result import *
 from msdata import *
+from check_annotation_accurary import *
 import copy
 
 # m = MSData.from_files('3T3_pro','/../../../Data/3T3_pro')
 # m = MSData.from_files('3T3_pro','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3_pro')
 m = MSData.from_files('IROA_MS1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_09162020/IROA_MS1_neg')
-m.apply_smooth_conv(m.gaussian_kernel(4, 12), rt_range=(0., np.inf))
+m.apply_smooth_conv(m.gaussian_kernel(2, 12), rt_range=(0., np.inf))
 
 #peak_detection_options = {'height': 1E-2, 'range_threshold': 1E-4, 'prominence': 1E-2}
 #h_max = np.max(ints) - np.min(ints)
@@ -16,7 +17,7 @@ m.apply_smooth_conv(m.gaussian_kernel(4, 12), rt_range=(0., np.inf))
 #delta = (rts[1:] - rts[:-1]).mean(), width = width / delta
 
 #afer peak_detection:range_threshold = peak_heights * range_threshold, beyong range,set to 0
-peak_detection_options = {'height': 0.1, 'range_threshold': 0.01, 'prominence': 0.1}
+peak_detection_options = {'height': 0.1, 'range_threshold': 0.05, 'prominence': 0.1}
 m.perform_feature_peak_detection(**peak_detection_options)
 m.remove_duplicates_detection()
 # m.perform_feature_peak_detection()
@@ -27,7 +28,7 @@ m.sort_feature(by=by)
 gen_base_opt = dict(
     l1=2.,
     min_sin=5E-2,  # min_sin=5E-2,
-    min_base_err=5E-2,  # min_base_err=5E-2,
+    min_base_err=5E-3,  # min_base_err=5E-2,
     min_rt_diff=1.,
     max_cos_sim=0.8
 )
@@ -55,7 +56,7 @@ spec_params = dict(
     # mz_upperbound=5.
     mz_upperbound=np.inf,
     # min_cos=.99
-    min_cos=0.
+    min_cos=0.85
 )
 m.gen_spectrum(0, plot=False, load=False, **spec_params)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
@@ -65,27 +66,28 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
 #     print(v)
 
 # ###check base group and find_match within each group and plot###
-test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative'
+test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E3_rangethre0.05_Ker2_12_mincos85'
 final_matching_results = []
-save_index = [30,60,90,100,130,153]
+save_index = [i for i in range(305)if i% 10==0]
 import datetime
 start=datetime.datetime.now()
-for i in range(0,154):
+for i in range(101,151):
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
     result = GroupMatchingResult(recons_spec=spec_2,
                                  base_index_relative=i,
                                  base_index_abs=m.base_index[i])
-    result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc,transform=None)
-    result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona,transform=None) ##start from 0th match##
-    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=iroa,transform=None)
+    result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=3,database=mzc,transform=None)
+    result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=3,database=mona,transform=None) ##start from 0th match##
+    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=3,database=iroa,transform=None)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
     result.summarize_matching_re_all_db(mzc=True,mona=True,iroa=True)
+    result.remove_db()
     final_matching_results.append(result)
     if i in save_index:
         fi_re=[[j.sum_matched_results_iroa, j.sum_matched_results_mona,j.sum_matched_results_mzc] for j in final_matching_results]
-        name = 'matchre_neg_stds_non_trans' + '_'+ str(i) +'.pkl'
+        name = 'mse5E3_range0.05_ker2_12_mincos85' + '_'+ str(i) +'.pkl'
         with open(test_path+'/' + name,'wb') as f:
             pkl.dump(fi_re,f)
 end=datetime.datetime.now()
@@ -152,14 +154,19 @@ with open('3T3_pro_re_mona.pkl', "wb") as write_file:
 with open('iroa_ms1_matching_result_01.pkl','wb') as f:
     pkl.dump(iroa_ms1_matching_result_1,f)
 
-test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative'
-with open(test_path+'/'+'base_index.pkl','wb') as f:
-    pkl.dump(m.base_index,f)
+test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative_09302020'
+with open(test_path+'/'+'5E3_peak_detection_results_raw.pkl','wb') as f:
+    pkl.dump(m._detection_results_raw,f)
+
+with open(test_path+'/'+'m.baseinfo_5E3mse_range1E2.pkl','wb') as f:
+    pkl.dump(m.base_info,f)
 
 
-with open(test_path +'/'+'iroa_ms1_matching_result_01.pkl','rb') as f:
-    temp = pkl.load(f)
+with open(test_path +'/'+'neg_stds_non_trans_mse5E3_30.pkl','rb') as f:
+    neg_stds_non_trans_mse5E3_30 = pkl.load(f)
 
 ########
-
-
+idx=[]
+for i in range(700):
+    if np.abs(m.mzs_raw[i][0]-172) <=1:
+        idx.append(i)
