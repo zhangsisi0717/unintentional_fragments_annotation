@@ -50,7 +50,7 @@ class MZCloudMatchingResult:
                         self.current_raw_matching_result = self.database.find_match(target=self.current_recons_spec,
                                                                                     save_matched_mz=True,
                                                                                     reset_matched_mzs=True,
-                                                                                    cos_threshold=0.01,
+                                                                                    cos_threshold=1E-3,
                                                                                     transform=self.transform)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
@@ -101,7 +101,7 @@ class MoNAMatchingResult(MZCloudMatchingResult):
                     if self.database:
                         self.current_raw_matching_result = self.database.find_match(target=self.current_recons_spec,
                                                                                     save_matched_mz=True,
-                                                                                    cos_threshold=0.01,
+                                                                                    cos_threshold=1E-3,
                                                                                     reset_matched_mzs=True,
                                                                                     transform=self.transform)
 
@@ -152,7 +152,7 @@ class IROAMatchingResult(MZCloudMatchingResult):
                     if self.database:
                         self.current_raw_matching_result = self.database.find_match(target=self.current_recons_spec,
                                                                                     save_matched_mz=True,
-                                                                                    cos_threshold=0.01,
+                                                                                    cos_threshold=1E-4,
                                                                                     reset_matched_mzs=True,
                                                                                     transform=self.transform)
 

@@ -686,7 +686,7 @@ class MZCloud:
     def find_match(self, target: Union[ReconstructedSpectrum, MZCloudSpectrum],
                    threshold: float = 1E-3,
                    mode: str = 'Negative',
-                   cos_threshold: float = 1E-3,
+                   cos_threshold: float = 1E-4,
                    transform: Optional[Callable[[float], float]] = None,
                    save_matched_mz: bool = True,
                    reset_matched_mzs: bool = True

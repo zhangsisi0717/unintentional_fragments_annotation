@@ -7,12 +7,12 @@ from pandas import DataFrame
 
 def check_base(index, m, file):
     iroa_df = pd.read_csv(file)
-    temp_list = [j for j in m.base_info[m.base_index[index]].spectrum.spectrum_list if j[1] > 0.1]
+    temp_list = [j for j in m.base_info[m.base_index[index]].spectrum.spectrum_list if j[1] > 0.00]
     temp_list.sort(key=lambda x: x[1], reverse=True)
     cmp_info = []
     for mz, ints in temp_list:
         new_df = iroa_df[(abs(iroa_df['M-H'] - mz) / mz) * 1E6 < 30]
-        rt_match_df = new_df[abs(new_df['RT(S)'] - m.base_info[m.base_index[index]].rt) <= 10]
+        rt_match_df = new_df[abs(new_df['RT(S)'] - m.base_info[m.base_index[index]].rt) <= 6]
         names = rt_match_df['Name'].values
         mz = rt_match_df['M-H'].values
         retenT = rt_match_df['RT(S)'].values
@@ -27,26 +27,20 @@ def correct_cmp_iroa(base_rela_index, final_matching_results, m, file):
     rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
     matched_cmp = []
     matched_cmp_name = []
-    skip_this_layer = False
-    for idx, content in final_matching_results[base_rela_index].sum_matched_results_iroa.items():
+    for cmp in cmp_info:
         if len(matched_cmp) < len(cmp_info):
-            for cmp in cmp_info:
-                if cmp[0] not in matched_cmp_name:
-                    for first_layer in content['candi_list_each_matching_layer']:
-                        if not skip_this_layer:
-                            if first_layer:
-                                for index in range(len(first_layer)):
-                                    if cmp[0] == first_layer[index][0].name:
-                                        matched_cmp.append((base_rela_index, cmp[0], first_layer[index][2], index,
+            if cmp[0] not in matched_cmp_name:
+                for idx, content in final_matching_results[base_rela_index].sum_matched_results_iroa.items():
+                    if cmp[0] not in matched_cmp_name:
+                        for layer in content['candi_list_each_matching_layer']:
+                            if cmp[0] not in matched_cmp_name:
+                                for index in range(len(layer)):
+                                    if cmp[3] == layer[index][0].InChIKey:
+                                        matched_cmp.append((base_rela_index, cmp[0], layer[index][2], index,
                                                             cmp[1], cmp[2], cmp[3]))
                                         matched_cmp_name.append(cmp[0])
-                                        skip_this_layer = True
                                         break
-                        else:
-                            skip_this_layer = False
-                            break
-        else:
-            break
+
     return matched_cmp
 
 
@@ -54,26 +48,20 @@ def correct_cmp_mona(base_rela_index, final_matching_results, m, file):
     rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
     matched_cmp = []
     matched_cmp_name = []
-    skip_this_layer = False
-    for idx, content in final_matching_results[base_rela_index].sum_matched_results_mona.items():
+    for cmp in cmp_info:
         if len(matched_cmp) < len(cmp_info):
-            for cmp in cmp_info:
-                if cmp[0] not in matched_cmp_name:
-                    for first_layer in content['candi_list_each_matching_layer']:
-                        if not skip_this_layer:
-                            if first_layer:
-                                for index in range(len(first_layer)):
-                                    if cmp[3] == first_layer[index][0].InChIKey:
-                                        matched_cmp.append((base_rela_index, cmp[0], first_layer[index][2], index,
+            if cmp[0] not in matched_cmp_name:
+                for idx, content in final_matching_results[base_rela_index].sum_matched_results_mona.items():
+                    if cmp[0] not in matched_cmp_name:
+                        for layer in content['candi_list_each_matching_layer']:
+                            if cmp[0] not in matched_cmp_name:
+                                for index in range(len(layer)):
+                                    if cmp[3] == layer[index][0].InChIKey:
+                                        matched_cmp.append((base_rela_index, cmp[0], layer[index][2], index,
                                                             cmp[1], cmp[2], cmp[3]))
                                         matched_cmp_name.append(cmp[0])
-                                        skip_this_layer = True
                                         break
-                        else:
-                            skip_this_layer = False
-                            break
-        else:
-            break
+
     return matched_cmp
 
 
@@ -81,27 +69,47 @@ def correct_cmp_mzc(base_rela_index, final_matching_results, m, file):
     rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
     matched_cmp = []
     matched_cmp_name = []
-    skip_this_layer = False
-    for idx, content in final_matching_results[base_rela_index].sum_matched_results_mzc.items():
+    for cmp in cmp_info:
         if len(matched_cmp) < len(cmp_info):
-            for cmp in cmp_info:
-                if cmp[0] not in matched_cmp_name:
-                    for first_layer in content['candi_list_each_matching_layer']:
-                        if not skip_this_layer:
-                            if first_layer:
-                                for index in range(len(first_layer)):
-                                    if cmp[3] == first_layer[index][0].InChIKey:
-                                        matched_cmp.append((base_rela_index, cmp[0], first_layer[index][2], index,
+            if cmp[0] not in matched_cmp_name:
+                for idx, content in final_matching_results[base_rela_index].sum_matched_results_mzc.items():
+                    if cmp[0] not in matched_cmp_name:
+                        for layer in content['candi_list_each_matching_layer']:
+                            if cmp[0] not in matched_cmp_name:
+                                for index in range(len(layer)):
+                                    if cmp[3] == layer[index][0].InChIKey:
+                                        matched_cmp.append((base_rela_index, cmp[0], layer[index][2], index,
                                                             cmp[1], cmp[2], cmp[3]))
                                         matched_cmp_name.append(cmp[0])
-                                        skip_this_layer = True
                                         break
-                        else:
-                            skip_this_layer = False
-                            break
-        else:
-            break
+
     return matched_cmp
+
+# def correct_cmp_mzc(base_rela_index, final_matching_results, m, file):
+#     rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
+#     matched_cmp = []
+#     matched_cmp_name = []
+#     skip_this_layer = False
+#     for idx, content in final_matching_results[base_rela_index].sum_matched_results_mzc.items():
+#         if len(matched_cmp) < len(cmp_info):
+#             for cmp in cmp_info:
+#                 if cmp[0] not in matched_cmp_name:
+#                     for first_layer in content['candi_list_each_matching_layer']:
+#                         if not skip_this_layer:
+#                             if first_layer:
+#                                 for index in range(len(first_layer)):
+#                                     if cmp[3] == first_layer[index][0].InChIKey:
+#                                         matched_cmp.append((base_rela_index, cmp[0], first_layer[index][2], index,
+#                                                             cmp[1], cmp[2], cmp[3]))
+#                                         matched_cmp_name.append(cmp[0])
+#                                         skip_this_layer = True
+#                                         break
+#                         else:
+#                             skip_this_layer = False
+#                             break
+#         else:
+#             break
+#     return matched_cmp
 
 
 def gen_df_for_correct_annotation(database, final_matching_results, m, file):
@@ -135,7 +143,7 @@ def gen_df_for_correct_annotation(database, final_matching_results, m, file):
         mzc_final_result = []
         mzc_mis_matched = []
         for i in range(len(final_matching_results)):
-            mzc_temp = correct_cmp_iroa(i, final_matching_results, m, file)
+            mzc_temp = correct_cmp_mzc(i, final_matching_results, m, file)
             if mzc_temp:
                 mzc_final_result += mzc_temp
             else:
@@ -156,9 +164,4 @@ def gen_file_matched_bases(m, file):####generate correct peak info within each b
 
     df_final = DataFrame(total_re,columns=['base_idx', 'Name','mz', 'rt', 'InChIKey'])
     return df_final
-
-
-
-
-
 

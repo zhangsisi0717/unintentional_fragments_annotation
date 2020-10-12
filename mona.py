@@ -183,7 +183,7 @@ class MonaDatabase:
     def find_match(self, target: Union[ReconstructedSpectrum, IROASpectrum, MZCloudSpectrum, MonaSpectrum],
                    rela_threshold: float = 1E-2,
                    # mode: str = 'Negative',
-                   cos_threshold: float = 0.1,
+                   cos_threshold: float = 1E-4,
                    transform: Optional[Callable[[float], float]] = None, save_matched_mz: bool = True,
                    reset_matched_mzs: bool = True
                    ) -> List[Tuple[MonaCompounds, MonaSpectrum, float]]:
