@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 ##.csv files with ground truth, including
 
 
-def check_base(index, m, file):
+def check_base2(index, m, file):
     iroa_df = pd.read_csv(file)
     temp_list = [j for j in m.base_info[m.base_index[index]].spectrum.spectrum_list if j[1] > 0.00]
     temp_list.sort(key=lambda x: x[1], reverse=True)
@@ -24,14 +24,14 @@ def check_base(index, m, file):
     return m.base_info[m.base_index[index]].rt, new_cmp_info, temp_list
 
 
-def correct_cmp_iroa(base_rela_index, final_matching_results, m, file):
-    rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
+def correct_cmp_iroa2(base_rela_index, final_matching_results, m, file):
+    rt, cmp_info, temp_list = check_base2(base_rela_index, m, file)
     matched_cmp = []
     matched_cmp_name = []
     for cmp in cmp_info:
         if len(matched_cmp) < len(cmp_info):
             if cmp[0] not in matched_cmp_name:
-                for idx, content in final_matching_results[base_rela_index].sum_matched_results_iroa.items():
+                for idx, content in final_matching_results[base_rela_index][0].items():
                     if cmp[0] not in matched_cmp_name:
                         for layer in content['candi_list_each_matching_layer']:
                             if cmp[0] not in matched_cmp_name:
@@ -45,14 +45,14 @@ def correct_cmp_iroa(base_rela_index, final_matching_results, m, file):
     return matched_cmp
 
 
-def correct_cmp_mona(base_rela_index, final_matching_results, m, file):
-    rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
+def correct_cmp_mona2(base_rela_index, final_matching_results, m, file):
+    rt, cmp_info, temp_list = check_base2(base_rela_index, m, file)
     matched_cmp = []
     matched_cmp_name = []
     for cmp in cmp_info:
         if len(matched_cmp) < len(cmp_info):
             if cmp[0] not in matched_cmp_name:
-                for idx, content in final_matching_results[base_rela_index].sum_matched_results_mona.items():
+                for idx, content in final_matching_results[base_rela_index][1].items():
                     if cmp[0] not in matched_cmp_name:
                         for layer in content['candi_list_each_matching_layer']:
                             if cmp[0] not in matched_cmp_name:
@@ -66,14 +66,14 @@ def correct_cmp_mona(base_rela_index, final_matching_results, m, file):
     return matched_cmp
 
 
-def correct_cmp_mzc(base_rela_index, final_matching_results, m, file):
-    rt, cmp_info, temp_list = check_base(base_rela_index, m, file)
+def correct_cmp_mzc2(base_rela_index, final_matching_results, m, file):
+    rt, cmp_info, temp_list = check_base2(base_rela_index, m, file)
     matched_cmp = []
     matched_cmp_name = []
     for cmp in cmp_info:
         if len(matched_cmp) < len(cmp_info):
             if cmp[0] not in matched_cmp_name:
-                for idx, content in final_matching_results[base_rela_index].sum_matched_results_mzc.items():
+                for idx, content in final_matching_results[base_rela_index][2].items():
                     if cmp[0] not in matched_cmp_name:
                         for layer in content['candi_list_each_matching_layer']:
                             if cmp[0] not in matched_cmp_name:
@@ -113,12 +113,12 @@ def correct_cmp_mzc(base_rela_index, final_matching_results, m, file):
 #     return matched_cmp
 
 
-def gen_df_for_correct_annotation(database, final_matching_results, m, file):
+def gen_df_for_correct_annotation2(database, final_matching_results, m, file):
     if database == 'iroa':
         iroa_final_result = []
         iroa_mis_matched = []
         for i in tqdm(range(len(final_matching_results)),desc='generating correct annotation for iroa:'):
-            iroa_temp = correct_cmp_iroa(i, final_matching_results, m, file)
+            iroa_temp = correct_cmp_iroa2(i, final_matching_results, m, file)
             if iroa_temp:
                 iroa_final_result += iroa_temp
             else:
@@ -131,7 +131,7 @@ def gen_df_for_correct_annotation(database, final_matching_results, m, file):
         mona_final_result = []
         mona_mis_matched = []
         for i in tqdm(range(len(final_matching_results)),desc='generating correct annotation for mona:'):
-            mona_temp = correct_cmp_mona(i, final_matching_results, m, file)
+            mona_temp = correct_cmp_mona2(i, final_matching_results, m, file)
             if mona_temp:
                 mona_final_result += mona_temp
             else:
@@ -144,7 +144,7 @@ def gen_df_for_correct_annotation(database, final_matching_results, m, file):
         mzc_final_result = []
         mzc_mis_matched = []
         for i in tqdm(range(len(final_matching_results)),desc='generating correct annotation for mzc:'):
-            mzc_temp = correct_cmp_mzc(i, final_matching_results, m, file)
+            mzc_temp = correct_cmp_mzc2(i, final_matching_results, m, file)
             if mzc_temp:
                 mzc_final_result += mzc_temp
             else:
@@ -154,10 +154,10 @@ def gen_df_for_correct_annotation(database, final_matching_results, m, file):
         return mzc_df_final, mzc_mis_matched
 
 
-def gen_file_matched_bases(m, file):####generate correct peak info within each basis based on input rt,mz
+def gen_file_matched_bases2(m, file):####generate correct peak info within each basis based on input rt,mz
     total_re = []
     for base_idx in tqdm(range(len(m.base_index))):
-        temp_result = check_base(base_idx, m, file)[1]
+        temp_result = check_base2(base_idx, m, file)[1]
         for i in range(len(temp_result)):
             temp_result[i] = list(temp_result[i])
             temp_result[i] = [base_idx] + temp_result[i]

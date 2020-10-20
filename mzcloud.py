@@ -717,7 +717,7 @@ class MZCloud:
                         #                     reset_matched_idx_mz=reset_matched_idx_mz)
                         if s.PrecursorPeaks:
                             for mz in target.mz:
-                                if (abs(s.PrecursorPeaks[0]['MZ']-mz)/s.PrecursorPeaks[0]['MZ']) * 10E6 <= 70:
+                                if (abs(s.PrecursorPeaks[0]['MZ']-mz)/s.PrecursorPeaks[0]['MZ']) * 1E6 <= 70:
                                     if_choose_s = True
                         if not s.PrecursorPeaks:
                             if_choose_s = True

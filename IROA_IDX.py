@@ -188,7 +188,7 @@ class IROADataBase:
                     #                     reset_matched_idx_mz=reset_matched_idx_mz)
                     if s.precursor:
                         for mz in target.mz:
-                            if (abs(s.precursor-mz)/s.precursor) * 10E6 <= 70:
+                            if (abs(s.precursor-mz)/s.precursor) * 1E6 <= 70:
                                 if_choose_s = True
                     if not s.precursor:
                         if_choose_s = True

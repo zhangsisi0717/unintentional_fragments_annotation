@@ -62,46 +62,62 @@ m.gen_spectrum(0, plot=False, load=False, **spec_params)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)
 
-# for v in m.base_info.values():
-#     print(v)
-
 # ###check base group and find_match within each group and plot###
-test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_3'
+test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_4_rerun'
 final_matching_results = []
-save_index = [i for i in range(len(m.base_index))if i% 200==0]
+save_index = [i for i in range(len(m.base_index))if i % 30 == 0]
 save_index.append(len(m.base_index)-1)
+idx_set=[]
 import datetime
-start=datetime.datetime.now()
+start = datetime.datetime.now()
 for i in range(len(m.base_index)):
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
-    result = GroupMatchingResult(recons_spec=spec_2,
+    if i in idx_set:
+        result = GroupMatchingResult(recons_spec=spec_2,
                                  base_index_relative=i,
                                  base_index_abs=m.base_index[i])
-    result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mzc,transform=None)
-    result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mona,transform=None) ##start from 0th match##
-    result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=iroa,transform=None)
+        result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mzc,transform=None)
+        result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mona,transform=None) ##start from 0th match##
+        result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=iroa,transform=None)
+
+    else:
+        result = GroupMatchingResult(recons_spec=spec_2,
+                                     base_index_relative=i,
+                                     base_index_abs=m.base_index[i])
+        result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mzc,transform=None)
+        result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mona,transform=None) ##start from 0th match##
+        result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=iroa,transform=None)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
-    result.summarize_matching_re_all_db(mzc=True,mona=True,iroa=True)
+    result.summarize_matching_re_all_db(mzc=True, mona=True, iroa=True)
     result.remove_db()
     final_matching_results.append(result)
     if i in save_index:
-        fi_re=[[j.sum_matched_results_iroa, j.sum_matched_results_mona,j.sum_matched_results_mzc] for j in final_matching_results]
-        name = 'neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_3' + '_'+ str(i) +'.pkl'
-        with open(test_path+'/' + name,'wb') as f:
-            pkl.dump(fi_re,f)
-end=datetime.datetime.now()
-print(end-start)
-#############################################################
+        index = save_index.index(i)
+        if index > 0:
+            fi_re = [[j.sum_matched_results_iroa, j.sum_matched_results_mona, j.sum_matched_results_mzc] for j in
+                     final_matching_results[save_index[int(index - 1)]:int(i + 1)]]
+            prev = save_index[int(index - 1)]
+            name = 'mincos9590_4_rerun' + '_' + str(prev) + '-' + str(i) + '.pkl'
+            with open(test_path + '/' + name, 'wb') as f:
+                pkl.dump(fi_re, f)
+end = datetime.datetime.now()
+print(end - start)
+###################################generate_correctly_matched_compounds##########################
 goundtruth_file_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/iroa_name_final.csv'
-path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_3'
+path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_4_rerun2'
 df_re_truth=gen_file_matched_bases(m=m, file=goundtruth_file_path)
-df_re_truth.to_excel(path_to_store+'/'+'df_truth_0.05.xlsx', index = False)
-re_df,mismatch_idx = gen_df_for_correct_annotation('iroa', final_matching_results, m, goundtruth_file_path)
-re_df.to_excel(path_to_store+'/'+'iroa_correct_match.xlsx', index = False)
-with open(path_to_store+'/'+'iroa_mismatch_idx.pkl','wb') as f:
+df_re_truth.to_excel(path_to_store+'/'+'df_truth_0.00.xlsx', index = False)
+df_re_truth.to_csv(path_to_store+'/'+'df_truth_0.00.csv')
+
+re_df,mismatch_idx = gen_df_for_correct_annotation('mzc', final_matching_results, m, goundtruth_file_path)
+re_df.to_excel(path_to_store+'/'+'mzc_correct_match_0.00.xlsx', index = False)
+with open(path_to_store+'/'+'mzc_mismatch_idx_0.00.pkl','wb') as f:
     pkl.dump(mismatch_idx,f)
+
+with open(path_to_store+'/'+'m.pkl','wb') as f:
+    pkl.dump(m,f)
 ################################################################
 # test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/negative_09302020'
 # with open(test_path+'/'+'5E3_peak_detection_results_raw.pkl','wb') as f:
@@ -109,18 +125,81 @@ with open(path_to_store+'/'+'iroa_mismatch_idx.pkl','wb') as f:
 
 # with open(path_to_store+'/'+'m.neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_3.pkl','wb') as f:
 #     pkl.dump(m.base_info,f)
-with open(path_to_store+'/'+'m.neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_3.pkl','wb') as f:
-    pkl.dump(m,f)
-
-
-# with open(test_path +'/'+'neg_stds_non_trans_mse5E3_30.pkl','rb') as f:
-#     neg_stds_non_trans_mse5E3_30 = pkl.load(f)
-#
 num_f=[]
 for idx,con in m.base_info.items():
     num_f.append(len(con.spectrum.mz))
 
-double_peak=[]
-for _,re in m._detection_results.items():
-    if re.n_overlaps == 2:
-        double_peak.append(re)
+#########################################generate_not_matched_compounds##########################################
+cur_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_4_rerun2'
+df_truth_0 = pd.read_csv(cur_path + '/' + 'df_truth_0.00.csv')
+df_db = pd.read_csv(cur_path + '/' + 'iroa_correct_match_0.00.csv')
+
+db_have_key=[]
+db_not_have_key=[]
+
+for idx in range(len(df_truth_0['InChIKey'].values)):
+    not_found = True
+    for cmp in mzc.compounds:  ###need to modify ##
+        if cmp.InChIKey == df_truth_0['InChIKey'].values[idx]:
+            db_have_key.append(idx)
+            not_found = False
+            break
+    if not_found:
+        db_not_have_key.append(idx)
+# mzc_have_key_df = df_truth_0.reindex(mzc_have_key)
+db_not_matched=[]
+for idx in db_have_key:
+    if df_truth_0.iloc[idx].InChIKey not in df_db['InChIKey'].values:
+        db_not_matched.append(idx)
+
+not_matched_df = df_truth_0.reindex(db_not_matched)
+not_matched_df.to_excel(cur_path+'/'+'iroa_not_matched_df_new.xlsx', index = True)
+# not_matched_df.to_csv(cur_path+'/'+'iroa_not_matched_df_new.csv')
+
+# db_have_key_df = df_truth_0.reindex(db_have_key)
+# db_have_key_df.to_excel(cur_path+'/'+'mzc_have_key_df.xlsx', index = True)
+##########################generate not-matched compounds###############################################################
+cur_path2 = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_4_rerun2'
+df_mzc_sum = pd.read_csv(cur_path2 + '/' + 'iroa_not_matched_df_new.csv')
+for index in range(len(df_mzc_sum['InChIKey'].values)):
+    target_cmp=[]
+    for cmp in iroa.compounds_list:
+        if cmp.InChIKey == df_mzc_sum['InChIKey'].values[index]:
+            target_cmp.append(cmp)
+            break
+    if target_cmp:
+        df_mzc_sum.iloc[[index],[6]] = 'Y'
+        polarity=set()
+        for s in target_cmp[0].spectra_1 + target_cmp[0].spectra_2:
+            # for s in t:
+            polarity.add(s.Polarity)
+        # print('polarity={}'.format(polarity))
+        if len(polarity)==1:
+            # print('polarity.pop={}'.format(polarity.pop))
+            if 'Negative' in polarity:
+                df_mzc_sum.iloc[[index],[7]] = 'Y'
+                df_mzc_sum.iloc[[index],[8]] = 'N'
+            elif 'Positive' in polarity:
+                df_mzc_sum.iloc[[index],[7]] = 'N'
+                df_mzc_sum.iloc[[index],[8]] = 'Y'
+
+        elif len(polarity) == 2:
+            df_mzc_sum.iloc[[index],[7]] = 'Y'
+            df_mzc_sum.iloc[[index],[8]] = 'Y'
+    else:
+        df_mzc_sum.iloc[[index],[6]] = 'N'
+
+df_mzc_sum.to_excel(cur_path2+'/'+'not_matched_iroa_new2.xlsx', index = False)
+##############COMBINE_MATCHED_RESULTS_ALL_DB###############################
+cur_path2 = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_4_rerun2'
+df_iroa = pd.read_csv(cur_path2 + '/' + 'iroa_correct_match_0.00.csv')
+df_mona = pd.read_csv(cur_path2 + '/' + 'mona_correct_match_0.00.csv')
+df_mzc = pd.read_csv(cur_path2 + '/' + 'mzc_correct_match_0.00.csv')
+df_iroa['database']='iroa'
+df_mona['database']='mona'
+df_mzc['database']='mzc'
+
+matched_all_db=pd.concat([df_iroa, df_mona, df_mzc])
+matched_all_db.drop_duplicates()
+matched_all_db.to_excel(cur_path2+'/'+'matched_all_db.xlsx', index = False)
+##############return_matched_peaks#########################################
