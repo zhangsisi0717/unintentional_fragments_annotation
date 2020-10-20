@@ -534,6 +534,62 @@ class ReconstructedSpectrum(Spectrum):
 
         return self.sub_recon_spec
 
+    def gen_matched_peaks_compound(self,inchIkey: str, database, mode: Union['Negative','Positive'], reset=True):
+        if reset:
+            self.matched_mz = None
+            self.mis_matched_mz = None
+        if database == 'iroa' or database == 'mona':
+            cor_candi=[]
+            for can in database.compounds_list:
+                if can.InChIKey == inchIkey:
+                    cor_candi.append(can)
+            res=[]
+            for s in cor_candi[0].spectra_1 + cor_candi[0].spectra_2:
+                if s.mode == mode:
+                    if_choose_s = False
+                    if s.precursor:
+                        for mz in self.mz:
+                            if (abs(s.precursor-mz)/s.precursor) * 10E6 <= 70:
+                                if_choose_s = True
+                    if not s.precursor:
+                        if_choose_s = True
+
+                    if if_choose_s:
+                        cos, matched_mzs = self.cos(other=s,func=None)
+                        s.matched_mzs = matched_mzs
+                        if cos > 1E-4:
+                            res.append((cor_candi[0],s, cos))
+            res.sort(key=lambda x: x[2], reverse=True)
+        elif database == 'mzc':
+            cor_candi=[]
+            for can in database.compounds:
+                if can.InChIKey == inchIkey:
+                    cor_candi.append(can)
+            res=[]
+            for t in cor_candi[0].spectra_1 + cor_candi[0].spectra_2:
+                for s in t:
+                    if s.Polarity == mode:
+                        if_choose_s = False
+                        if s.precursor:
+                            for mz in self.mz:
+                                if (abs(s.precursor-mz)/s.precursor) * 10E6 <= 70:
+                                    if_choose_s = True
+                        if not s.precursor:
+                            if_choose_s = True
+
+                        if if_choose_s:
+                            cos, matched_mzs = self.cos(other=s,func=None)
+                            s.matched_mzs = matched_mzs
+                            if cos > 1E-4:
+                                res.append((cor_candi[0],s, cos))
+            res.sort(key=lambda x: x[2], reverse=True)
+
+        self.gen_matched_mz(res[0][1],reset_matched_mz=True)
+        self.check_isotope()
+        self.check_adduction_list(mode=mode)
+        self.check_multimer(mode=mode)
+        return self.matched_mz, self.mis_matched_mz
+
 
 @dataclass
 class BaseProperties:
