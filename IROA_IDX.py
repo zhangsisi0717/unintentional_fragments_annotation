@@ -99,6 +99,7 @@ class IROACompounds:
 
 @dataclass()
 class IROADataBase:
+    name: Optional[str] = 'iroa'
     dir: Optional[str] = None
     compounds_list: Optional[List[IROACompounds]] = field(default_factory=list, repr=None)
     compounds_dic: Optional[Dict] = field(default_factory=dict,repr=None) ##key:compounds_name value:List[Spectrum]

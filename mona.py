@@ -103,6 +103,7 @@ class MonaCompounds:
 
 @dataclass()
 class MonaDatabase:
+    name: Optional[str] = 'mona'
     neg_dir: Optional[str] = field(default=None, repr=False)
     pos_dir: Optional[str] = field(default=None, repr=False)
     compounds_list: Optional[List[MonaCompounds]] = field(default_factory=list, repr=False)

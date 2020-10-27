@@ -399,7 +399,7 @@ class MZCloud:
         return int(stem)
 
     def __init__(self, root_dir: str, **options) -> None:
-
+        self.name: Optional[str] = 'mzc'
         self.root_path: Path = Path(root_dir)
         if not self.root_path.is_dir():
             raise FileNotFoundError("root_dir '{}' is not a directory".format(root_dir))
