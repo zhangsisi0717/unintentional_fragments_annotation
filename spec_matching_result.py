@@ -9,6 +9,7 @@ import copy
 
 @dataclass
 class MZCloudMatchingResult:
+    mode: Optional[str] = "Negative"
     transform: Optional[math.sqrt] = field(default=None,repr=False)
     database: Optional[MZCloud] = field(default=None, repr=False)
     nth_candidate: Optional[int] = field(default=None, repr=True)  # if 0th_match, then nth_candidate is None
@@ -62,8 +63,10 @@ class MZCloudMatchingResult:
                     cur_spec.gen_matched_mz(self.current_raw_matching_result[i][1])
                     cur_spec.check_isotope()
                     cur_spec.check_adduction_list(molecular_weight=
-                                                  self.current_raw_matching_result[i][0].MolecularWeight)
-                    cur_spec.check_multimer(molecular_weight=self.current_raw_matching_result[i][0].MolecularWeight)
+                                                  self.current_raw_matching_result[i][0].MolecularWeight,
+                                                  mode=self.mode)
+                    cur_spec.check_multimer(molecular_weight=self.current_raw_matching_result[i][0].MolecularWeight,
+                                            mode=self.mode)
                     sub_spec = cur_spec.generate_sub_recon_spec()
                     self.n_candidates_further_match_r[i] = MZCloudMatchingResult(nth_match=int(self.nth_match + 1),
                                                                                  nth_candidate=i,
@@ -114,8 +117,10 @@ class MoNAMatchingResult(MZCloudMatchingResult):
                     cur_spec.gen_matched_mz(self.current_raw_matching_result[i][1])
                     cur_spec.check_isotope()
                     cur_spec.check_adduction_list(molecular_weight=
-                                                  self.current_raw_matching_result[i][0].total_exact_mass)
-                    cur_spec.check_multimer(molecular_weight=self.current_raw_matching_result[i][0].total_exact_mass)
+                                                  self.current_raw_matching_result[i][0].total_exact_mass,
+                                                  mode=self.mode)
+                    cur_spec.check_multimer(molecular_weight=self.current_raw_matching_result[i][0].total_exact_mass,
+                                            mode=self.mode)
                     sub_spec = cur_spec.generate_sub_recon_spec()
                     self.n_candidates_further_match_r[i] = MoNAMatchingResult(nth_match=int(self.nth_match + 1),
                                                                               nth_candidate=i,
@@ -165,8 +170,10 @@ class IROAMatchingResult(MZCloudMatchingResult):
                     cur_spec.gen_matched_mz(self.current_raw_matching_result[i][1])
                     cur_spec.check_isotope()
                     cur_spec.check_adduction_list(molecular_weight=
-                                                  self.current_raw_matching_result[i][0].MolecularWeight)
-                    cur_spec.check_multimer(molecular_weight=self.current_raw_matching_result[i][0].MolecularWeight)
+                                                  self.current_raw_matching_result[i][0].MolecularWeight,
+                                                  mode=self.mode)
+                    cur_spec.check_multimer(molecular_weight=self.current_raw_matching_result[i][0].MolecularWeight,
+                                            mode=self.mode)
                     sub_spec = cur_spec.generate_sub_recon_spec()
                     self.n_candidates_further_match_r[i] = IROAMatchingResult(nth_match=int(self.nth_match + 1),
                                                                               nth_candidate=i,
@@ -189,6 +196,7 @@ class GroupMatchingResult:
     Container class for reconstructed spectrum matching results
 
     """
+    mode: Optional[str] = 'Negative'
     base_index_abs: Optional[int] = field(default=None, repr=False)
     base_index_relative: Optional[int] = field(default=None, repr=True)
     recons_spec: Optional[ReconstructedSpectrum] = field(default=None, repr=True)
@@ -227,7 +235,8 @@ class GroupMatchingResult:
                                            database=database,
                                            base_index_abs=base_index_abs,
                                            base_index_relative=base_index_relative,
-                                           transform=transform)
+                                           transform=transform,
+                                           mode=self.mode)
 
             self.mzcloud_result = result
 
@@ -245,7 +254,7 @@ class GroupMatchingResult:
                                         database=database,
                                         base_index_abs=base_index_abs,
                                         base_index_relative=base_index_relative,
-                                        transform=transform)
+                                        transform=transform,mode=self.mode)
 
             self.mona_result = result
 
@@ -263,7 +272,7 @@ class GroupMatchingResult:
                                         database=database,
                                         base_index_abs=base_index_abs,
                                         base_index_relative=base_index_relative,
-                                        transform=transform)
+                                        transform=transform,mode=self.mode)
 
             self.iroa_result = result
 

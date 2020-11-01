@@ -375,12 +375,14 @@ class MZCloudSpectrum(Spectrum):
                 self.resolution = resolution[self.is_not_nan]
                 self.max_intensity = np.max(self.intensity)
                 self.relative_intensity = self.intensity / self.max_intensity
+                self.spectrum_list_rela = list(zip(self.mz,self.relative_intensity))
                 self.spectrum_valid = True
                 self.n_valid_peaks = len(self.mz)
 
-                self.reduced_spectrum_list = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
-                self.reduced_mz = np.array([mz for mz, intensity in self.reduced_spectrum_list])
-                self.reduced_intensity = np.array([intensity for mz, intensity in self.reduced_spectrum_list])
+                self.spectrum_list_reduced = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
+                self.spectrum_list_reduced_rela = [(mz, ints) for mz, ints in self.spectrum_list_rela if ints > self.rela_threshold_reduce]
+                self.reduced_mz = np.array([mz for mz, intensity in self.spectrum_list_reduced])
+                self.reduced_intensity = np.array([intensity for mz, intensity in self.spectrum_list_reduced])
                 self.reduced_rela_intensity = self.reduced_intensity / self.max_intensity
                 self.reduced_n_peaks = len(self.reduced_intensity)
 

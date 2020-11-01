@@ -135,11 +135,11 @@ class Spectrum:
     bin_ppm: float = field(default=60., repr=False, init=True)
     bin_vec: Optional[BinnedSparseVector] = field(default=None, repr=False, init=False)
 
-    reduced_spectrum_list: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
+    spectrum_list_reduced: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
     reduced_mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     reduced_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     reduced_rela_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
-    rela_threshold_reduce: Optional[Numeric] = field(default=0.02, repr=False, init=False)
+    rela_threshold_reduce: Optional[Numeric] = field(default=0.01, repr=False, init=False)
     reduced_n_peaks:int = field(default=0, repr=True, init=False)
 
     def __post_init__(self):
@@ -149,10 +149,10 @@ class Spectrum:
             self.intensity = np.array([intensity for mz, intensity in self.spectrum_list])
             self.max_intensity = 0. if self.n_peaks == 0 else np.max(self.intensity)
 
-            self.reduced_spectrum_list = [(mz, ints) for mz, ints in self.spectrum_list if
+            self.spectrum_list_reduced = [(mz, ints) for mz, ints in self.spectrum_list if
                                           ints > self.max_intensity * self.rela_threshold_reduce]
-            self.reduced_mz = np.array([mz for mz, intensity in self.reduced_spectrum_list])
-            self.reduced_intensity = np.array([intensity for mz, intensity in self.reduced_spectrum_list])
+            self.reduced_mz = np.array([mz for mz, intensity in self.spectrum_list_reduced])
+            self.reduced_intensity = np.array([intensity for mz, intensity in self.spectrum_list_reduced])
             self.reduced_n_peaks = len(self.reduced_intensity)
 
         elif self.mz and self.intensity:
@@ -160,9 +160,9 @@ class Spectrum:
                 self.n_peaks = len(self.mz)
                 self.spectrum_list = list(zip(self.mz, self.intensity))
                 self.max_intensity = 0. if self.n_peaks == 0 else np.max(self.intensity)
-                self.reduced_spectrum_list = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
-                self.reduced_mz = np.array([mz for mz, intensity in self.reduced_spectrum_list])
-                self.reduced_intensity = np.array([intensity for mz, intensity in self.reduced_spectrum_list])
+                self.spectrum_list_reduced = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
+                self.reduced_mz = np.array([mz for mz, intensity in self.spectrum_list_reduced])
+                self.reduced_intensity = np.array([intensity for mz, intensity in self.spectrum_list_reduced])
                 self.reduced_n_peaks = len(self.reduced_intensity)
 
         else:
@@ -428,12 +428,12 @@ class ReconstructedSpectrum(Spectrum):
         return isotope_mz
 
     def check_adduction_list(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
-                             reset: bool = True, mode: str = 'negative'):
+                             reset: bool = True, mode: str = 'Negative'):
         ##exact_mass-adduction##
         if reset:
             self.matched_adduction = dict()
         if molecular_weight:
-            adduction_list = {'positive': {'M+H-2H2O': (35.012788115999996, 1),
+            adduction_list = {'Positive': {'M+H-2H2O': (35.012788115999996, 1),
                                            'M+H-H2O': (17.00278811000001, 1),
                                            'M-H2O+NH4': (-0.022711889999982304, 1),
                                            'M+H': (-1.0073118899999827, 1),
@@ -444,19 +444,28 @@ class ReconstructedSpectrum(Spectrum):
                                            'M+K': (-38.96311188999999, 1),
                                            'M+ACN+H': (-42.03381188999998, 1),
                                            'M+2Na-H': (-44.97111189, 1),
-                                           'M+ACN+Na': (-64.01581188999998, 1)},
-                              'negative': {'M-H': (1.0072881100000188, 1),
+                                           'M+ACN+Na': (-64.01581188999998, 1),
+                                           '[M+H+Na]2+': (molecular_weight-(molecular_weight+1.0078+22.9897)/2,2),
+                                           '[M+2H]2+': (molecular_weight-(molecular_weight+2*1.0078)/2, 2),
+                                           '[M+2Na]2+': (molecular_weight-(molecular_weight+2*22.9897)/2, 2),
+                                           '[M+3H]3+': (molecular_weight-(molecular_weight+3*1.0078)/3, 3),
+                                           '[M+2H+Na]3+': (molecular_weight-(molecular_weight+2*1.0078+22.9897)/3,3),
+                                           '[M+H+2Na]3+': (molecular_weight-(molecular_weight+1.0078+2*22.9897)/3,3)},
+                              'Negative': {'M-H': (1.0072881100000188, 1),
                                            'M+F': (-18.998411884000006, 1),
                                            'M-H2O-H': (-19.01838811600001, 1),
                                            'M+Na-2H': (-20.974711883999987, 1),
                                            'M+Cl': (-34.96941188400001, 1),
                                            'M+K-2H': (-36.948611884, 1),
                                            'M+FA-H': (-44.998211884, 1),
-                                           'M+CH3COO': (-59.013811884000006, 1)}}
+                                           'M+CH3COO': (-59.013811884000006, 1),
+                                           '[2M-2H+Na]-': (molecular_weight-(2*molecular_weight-1.0078*2+22.9897),1),
+                                           '[M-2H]2-': (molecular_weight-(molecular_weight-2*1.0078)/2, 2),
+                                           '[M-3H]3-': (molecular_weight-(molecular_weight-3*1.0078)/3, 3)}}
 
             matched_adduction = dict()
-            if mode not in ('negative', 'positive'):
-                raise TypeError('mode must be negative or positive')
+            if mode not in ('Negative', 'Positive'):
+                raise TypeError('mode must be Negative or Positive')
             else:
                 for mis_mz in self.mis_matched_mz:
                     for ad, mz in adduction_list[mode].items():
@@ -470,14 +479,14 @@ class ReconstructedSpectrum(Spectrum):
         return self.matched_adduction
 
     def check_multimer(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
-                       reset: bool = True, mode: str = 'negative'):
+                       reset: bool = True, mode: str = 'Negative'):
         if reset:
             self.matched_multimer = dict()
         if molecular_weight:
-            if mode not in ('negative', 'positive'):
-                raise TypeError('mode must be negative or positive')
+            if mode not in ('Negative', 'Positive'):
+                raise TypeError('mode must be Negative or Positive')
             else:
-                if mode == 'negative':
+                if mode == 'Negative':
                     for mz, intensity in self.matched_mz:
                         for mis_mz, mis_intensity in self.mis_matched_mz:
                             if (abs(mz * 2 + 1.0073118899999827 - mis_mz) / (
@@ -497,7 +506,7 @@ class ReconstructedSpectrum(Spectrum):
                                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
                                         if (mis_mz,mis_intensity) not in self.matched_mz:
                                             self.matched_mz.append((mis_mz, mis_intensity))
-                elif mode == 'positive':
+                elif mode == 'Positive':
                     for mz, intensity in self.matched_mz:
                         for mis_mz, mis_intensity in self.mis_matched_mz:
                             if (abs(mz * 2 - 1.0073118899999827 - mis_mz) / (
@@ -539,6 +548,7 @@ class ReconstructedSpectrum(Spectrum):
             self.matched_mz = None
             self.mis_matched_mz = None
         res=[]
+        mw = None
         if database.name == 'iroa':
             cor_candi=[]
             for can in database.compounds_list:
@@ -561,6 +571,8 @@ class ReconstructedSpectrum(Spectrum):
                             if cos > 1E-4:
                                 res.append((cor_candi[0],s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
+            if res:
+                mw = res[0][0].MolecularWeight
         elif database.name == 'mona':
             cor_candi=[]
             for can in database.compounds_list:
@@ -583,6 +595,8 @@ class ReconstructedSpectrum(Spectrum):
                             if cos > 1E-4:
                                 res.append((cor_candi[0],s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
+            if res:
+                mw = res[0][0].total_exact_mass
 
         elif database.name == 'mzc':
             cor_candi=[]
@@ -607,15 +621,18 @@ class ReconstructedSpectrum(Spectrum):
                                 if cos > 1E-4:
                                     res.append((cor_candi[0],s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
+            if res:
+                mw = res[0][0].MolecularWeight
+
         if res:
             target_spec = res[0][1]
             self.gen_matched_mz(target_spec,reset_matched_mz=True)
             self.check_isotope()
-            self.check_adduction_list(mode=mode)
-            self.check_multimer(mode=mode)
-            return self.matched_mz, self.mis_matched_mz
+            self.check_adduction_list(mode=mode,molecular_weight=mw)
+            self.check_multimer(mode=mode,molecular_weight=mw)
+            return self.matched_mz, self.mis_matched_mz,self.matched_isotope_mz,self.matched_adduction,self.matched_multimer
         else:
-            return ['res_empty'],['res_empty']
+            return ['res_empty'],['res_empty'],['empty'],['empty'],['empty']
 
 
 @dataclass
