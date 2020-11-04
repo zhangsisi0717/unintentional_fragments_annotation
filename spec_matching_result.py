@@ -52,7 +52,8 @@ class MZCloudMatchingResult:
                                                                                     save_matched_mz=True,
                                                                                     reset_matched_mzs=True,
                                                                                     cos_threshold=1E-4,
-                                                                                    transform=self.transform)
+                                                                                    transform=self.transform,
+                                                                                    mode=self.mode)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
@@ -81,7 +82,7 @@ class MZCloudMatchingResult:
                                                                                  self.total_layer_matching,
                                                                                  n_candidates_further_matched=
                                                                                  self.n_candidates_further_matched,
-                                                                                 )
+                                                                                 mode=self.mode)
 
 
 @dataclass()
@@ -134,7 +135,8 @@ class MoNAMatchingResult(MZCloudMatchingResult):
                                                                               total_layer_matching=
                                                                               self.total_layer_matching,
                                                                               n_candidates_further_matched=
-                                                                              self.n_candidates_further_matched)
+                                                                              self.n_candidates_further_matched,
+                                                                              mode=self.mode)
 
 
 @dataclass()
@@ -159,7 +161,8 @@ class IROAMatchingResult(MZCloudMatchingResult):
                                                                                     save_matched_mz=True,
                                                                                     cos_threshold=1E-4,
                                                                                     reset_matched_mzs=True,
-                                                                                    transform=self.transform)
+                                                                                    transform=self.transform,
+                                                                                    mode=self.mode)
 
                 if len(self.current_raw_matching_result) < self.n_candidates_further_matched:
                     self.n_candidates_further_matched = len(self.current_raw_matching_result)
@@ -187,7 +190,8 @@ class IROAMatchingResult(MZCloudMatchingResult):
                                                                               total_layer_matching=
                                                                               self.total_layer_matching,
                                                                               n_candidates_further_matched=
-                                                                              self.n_candidates_further_matched)
+                                                                              self.n_candidates_further_matched,
+                                                                              mode=self.mode)
 
 
 @dataclass
@@ -285,10 +289,12 @@ class GroupMatchingResult:
             for _, sub_result in cur_result.n_candidates_further_match_r.items():
                 recursive_remove_database(sub_result)
             return
-
-        recursive_remove_database(self.mzcloud_result)
-        recursive_remove_database(self.mona_result)
-        recursive_remove_database(self.iroa_result)
+        if self.mzcloud_result:
+            recursive_remove_database(self.mzcloud_result)
+        if self.mona_result:
+            recursive_remove_database(self.mona_result)
+        if self.iroa_result:
+            recursive_remove_database(self.iroa_result)
 
     @staticmethod
     def summarize_all_matching_result(result:Union[MZCloudMatchingResult,MoNAMatchingResult,IROAMatchingResult]):

@@ -6,6 +6,6 @@ dire = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annot
 iroa = IROADataBase(dir=dire)
 iroa.read_file()
 for c in tqdm(iroa.compounds_list, desc="reading IROA compounds"):
-    c.generate_mz_collection(mode='Negative')
+    c.generate_mz_collection(mode='Positive') ##'Negative or Positive#
 
 

@@ -11,13 +11,5 @@ mzc.read_comp_metadata()
 
 
 for c in tqdm(mzc.compounds, desc="reading MZcloud compounds"):
-    c.generate_mz_collection(threshold=1E-3, mode='Negative')
-    c.get_precursor(mode='Negative')
-#######################################################################################################################
-# lucose = []
-# for c in tqdm(mzc.compounds):
-#     if 'lucose' in c.CompoundName:
-#         lucose.append(c)
-#
-# glc = lucose[6].spectra_2[1][1]
-# re = iroa.find_match(target=glc,save_matched_mz=True,transform=math.sqrt)
+    c.generate_mz_collection(threshold=1E-3, mode='Positive') #Negative or Positive#
+    c.get_precursor(mode='Positive')  #Negative or Positive#

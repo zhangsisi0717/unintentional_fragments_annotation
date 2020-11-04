@@ -5,23 +5,39 @@ from tqdm.auto import tqdm
 # file = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_mse5E3_rangethre0.05_Ker2_12_mincos85/iroa_name_final.csv'
 ##.csv files with ground truth, including
 
-
 def check_base(index, m, file):
     iroa_df = pd.read_csv(file)
     temp_list = [j for j in m.base_info[m.base_index[index]].spectrum.spectrum_list if j[1] > 0.00]
     temp_list.sort(key=lambda x: x[1], reverse=True)
     cmp_info = []
     for mz, ints in temp_list:
-        new_df = iroa_df[(abs(iroa_df['M-H'] - mz) / mz) * 1E6 < 30]
+        new_df = iroa_df[(abs(iroa_df.iloc[:,5] - mz) / mz) * 1E6 < 30]
         rt_match_df = new_df[abs(new_df['RT(S)'] - m.base_info[m.base_index[index]].rt) <= 6]
         names = rt_match_df['Name'].values
-        mz = rt_match_df['M-H'].values
+        mz = rt_match_df.iloc[:,5].values
         retenT = rt_match_df['RT(S)'].values
         inchikey = rt_match_df['InChiKey'].values
         re = list(zip(names, mz, retenT, inchikey))
         cmp_info.append(re)
     new_cmp_info = [j for i in cmp_info if i for j in i]
     return m.base_info[m.base_index[index]].rt, new_cmp_info, temp_list
+
+# def check_base(index, m, file):
+#     iroa_df = pd.read_csv(file)
+#     temp_list = [j for j in m.base_info[m.base_index[index]].spectrum.spectrum_list if j[1] > 0.00]
+#     temp_list.sort(key=lambda x: x[1], reverse=True)
+#     cmp_info = []
+#     for mz, ints in temp_list:
+#         new_df = iroa_df[(abs(iroa_df['M-H'] - mz) / mz) * 1E6 < 30]
+#         rt_match_df = new_df[abs(new_df['RT(S)'] - m.base_info[m.base_index[index]].rt) <= 6]
+#         names = rt_match_df['Name'].values
+#         mz = rt_match_df['M-H'].values
+#         retenT = rt_match_df['RT(S)'].values
+#         inchikey = rt_match_df['InChiKey'].values
+#         re = list(zip(names, mz, retenT, inchikey))
+#         cmp_info.append(re)
+#     new_cmp_info = [j for i in cmp_info if i for j in i]
+#     return m.base_info[m.base_index[index]].rt, new_cmp_info, temp_list
 
 
 def correct_cmp_iroa(base_rela_index, final_matching_results, m, file):

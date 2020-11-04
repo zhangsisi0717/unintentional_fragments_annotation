@@ -1,12 +1,12 @@
 from mona import *
 
 mona_dire_neg ='../../../MoNA/mona_neg_cleaned.pkl'
-mona_dire_pos ='../../../MoNA/mona_lcms_pos.pkl'
+mona_dire_pos ='../../../MoNA/mona_pos_cleaned.pkl'
 
 mona = MonaDatabase(neg_dir=mona_dire_neg,pos_dir=mona_dire_pos)
-mona.read_file(cur_mode='Negative')
+mona.read_file(cur_mode='Positive') #Negative or Positive
 for c in tqdm(mona.compounds_list, desc="processing compounds"):
-    c.generate_mz_collection(mode='Negative')
+    c.generate_mz_collection(mode='Positive')
 
 ##########################################################################################################################
 
