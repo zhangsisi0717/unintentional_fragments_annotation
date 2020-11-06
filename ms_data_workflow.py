@@ -72,6 +72,7 @@ idx_set=[]
 import datetime
 start = datetime.datetime.now()
 for i in range(len(m.base_index)):
+    print(f'current running basis {i}')
     spec = m.base_info[m.base_index[i]].spectrum
     spec_2 = copy.deepcopy(spec)
     if i in idx_set:
@@ -88,12 +89,12 @@ for i in range(len(m.base_index)):
                                      base_index_relative=i,
                                      base_index_abs=m.base_index[i],
                                      mode='Positive')
-        result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc,transform=None)
-        # result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=mona,transform=None) ##start from 0th match##
-        # result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=10,database=iroa,transform=None)
+        # result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc,transform=None)
+        result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona,transform=None) ##start from 0th match##
+        result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=iroa,transform=None)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
-    result.summarize_matching_re_all_db(mzc=True, mona=False, iroa=False)
+    result.summarize_matching_re_all_db(mzc=False, mona=True, iroa=True)
     result.remove_db()
     final_matching_results.append(result)
     # if i in save_index:
@@ -117,15 +118,23 @@ grountruth_csv = path_to_store+'/'+'df_truth_0.00.csv'
 gen_result_groundtruth(m=m,goundtruth_file_path=goundtruth_file_path,path_to_store_xlx=grountruth_xlx,path_to_store_csv=grountruth_csv)
 
 
-correct_match_xlx = path_to_store+'/'+ 'mzc' +'_correct_match_0.00.xlsx'
-correct_match_csv = path_to_store+'/'+ 'mzc'+'_correct_match_0.00.csv'
-gen_correct_matched_results(m,'mzc',final_matching_results,goundtruth_file_path,correct_match_xlx,correct_match_csv)
+correct_match_xlx = path_to_store+'/'+ 'mona' +'_correct_match_0.00.xlsx'
+correct_match_csv = path_to_store+'/'+ 'mona'+'_correct_match_0.00.csv'
+gen_correct_matched_results(m,'mona',final_matching_results,goundtruth_file_path,correct_match_xlx,correct_match_csv)
 
 # correct_match_path = cur_path + '/' + 'mzc_correct_match_0.00.csv'
-not_matched_xlx = path_to_store+'/'+'not_matched_mzc_new2.xlsx'
+not_matched_xlx = path_to_store+'/'+'not_matched_mona_new2.xlsx'
 df_truth_path = path_to_store + '/' + 'df_truth_0.00.csv'
-gen_not_matched_results(database=mzc,df_truth_path=df_truth_path,correct_match_path=correct_match_csv,path_to_store=not_matched_xlx)
-
+gen_not_matched_results(database=mona,df_truth_path=df_truth_path,correct_match_path=correct_match_csv,path_to_store=not_matched_xlx)
+################################generate matched fragments all db_based on groundtruth#####################################################
+import pandas as pd
+cur_path2='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
+iroa_path = cur_path2 + '/' + 'iroa_correct_match_0.00.csv'
+mona_path = cur_path2 + '/' + 'mona_correct_match_0.00.csv'
+mzc_path = cur_path2 + '/' + 'mzc_correct_match_0.00.csv'
+save_path_xls = cur_path2+'/'+'matched_all_db_update.xlsx'
+save_path_csv = cur_path2+'/'+'matched_all_db_update.csv'
+gen_all_db_results(m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,iroa,mzc,mona)
 ###################################generate_correctly_matched_compounds##########################
 # goundtruth_file_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/iroa_name_final_pos.csv'
 # path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
@@ -222,7 +231,7 @@ gen_not_matched_results(database=mzc,df_truth_path=df_truth_path,correct_match_p
 #
 #     df_mzc_sum.to_excel(cur_path2+'/'+'not_matched_mzc_new2.xlsx', index = False)
 ##############COMBINE_MATCHED_RESULTS_ALL_DB###############################
-cur_path2 = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_102320_matching_3_02'
+cur_path2='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
 df_iroa = pd.read_csv(cur_path2 + '/' + 'iroa_correct_match_0.00.csv')
 df_mona = pd.read_csv(cur_path2 + '/' + 'mona_correct_match_0.00.csv')
 df_mzc = pd.read_csv(cur_path2 + '/' + 'mzc_correct_match_0.00.csv')
@@ -245,16 +254,18 @@ matched_all_db['num_multimer'] = 'NA'
 matched_all_db.to_csv(cur_path2+'/'+'matched_all_db.csv',index=False)
 ##############return_matched_peaks#########################################
 cur_path2 = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_102320_matching_3_02'
-matched_all_db = pd.read_csv(cur_path2 + '/' + 'matched_all_db.csv')
+matched_all_db2 = pd.read_csv(cur_path2 + '/' + 'matched_all_db.csv')
 # matched_all_db.rename(columns={'other_matched':'non_matched'},inplace=True)
-matched_all_db['spec_matched_peaks'] = matched_all_db['spec_matched_peaks'].apply(lambda x: list())
-matched_all_db['non_matched'] = matched_all_db['non_matched'].apply(lambda x: list())
-matched_all_db['isotope'] = matched_all_db['isotope'].apply(lambda x: dict())
-matched_all_db['adduction'] = matched_all_db['adduction'].apply(lambda x: dict())
-matched_all_db['multimer'] = matched_all_db['multimer'].apply(lambda x: dict())
+matched_all_db2['spec_matched_peaks'] = matched_all_db2['spec_matched_peaks'].apply(lambda x: list())
+matched_all_db2['non_matched'] = matched_all_db2['non_matched'].apply(lambda x: list())
+matched_all_db2['isotope'] = matched_all_db2['isotope'].apply(lambda x: dict())
+matched_all_db2['adduction'] = matched_all_db2['adduction'].apply(lambda x: dict())
+matched_all_db2['multimer'] = matched_all_db2['multimer'].apply(lambda x: dict())
 
 for idx in tqdm(range(len(matched_all_db.index))):
-    base_idx = matched_all_db.loc[idx, 'base_idx']
+    print(f'idx={idx}')
+    base_idx = matched_all_db.loc[idx, 'base_idx'] #base_idx#
+    print(f'base_idx={base_idx}')
     temp_spec = copy.deepcopy(m.base_info[m.base_index[base_idx]].spectrum)
     inchikey = matched_all_db.loc[idx, 'InChIKey']
     if matched_all_db.loc[idx, 'database'] == 'iroa':

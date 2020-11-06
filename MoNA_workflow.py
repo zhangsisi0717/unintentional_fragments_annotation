@@ -1,7 +1,7 @@
 from mona import *
 
 mona_dire_neg ='../../../MoNA/mona_neg_cleaned.pkl'
-mona_dire_pos ='../../../MoNA/mona_pos_cleaned.pkl'
+mona_dire_pos ='../../../MoNA/mona_pos_cleaned_new.pkl'
 
 mona = MonaDatabase(neg_dir=mona_dire_neg,pos_dir=mona_dire_pos)
 mona.read_file(cur_mode='Positive') #Negative or Positive

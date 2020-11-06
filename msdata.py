@@ -1861,7 +1861,7 @@ class MSData:
 
     def plot_coelution(self, base_index: int, dpi: Optional[float] = None,
                        figsize: Optional[Tuple[Numeric, Numeric]] = None,
-                       threshold: float = 1E-2, max_mse: float = 1E-2, max_rt_diff: float = .5,
+                       threshold: float = 1E-2, max_mse: float = 0.05, max_rt_diff: float = .5,
                        min_cos: float = 0.9,
                        xlim: Optional[Union[str, Tuple[Numeric, Numeric]]] = 'auto',
                        xlim_delta_rt: float = 20.,
