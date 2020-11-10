@@ -1,13 +1,13 @@
 from mona import *
-
-mona_dire_neg ='../../../MoNA/mona_neg_cleaned.pkl'
-mona_dire_pos ='../../../MoNA/mona_pos_cleaned_new.pkl'
-
-mona = MonaDatabase(neg_dir=mona_dire_neg,pos_dir=mona_dire_pos)
-mona.read_file(cur_mode='Positive') #Negative or Positive
-for c in tqdm(mona.compounds_list, desc="processing compounds"):
-    c.generate_mz_collection(mode='Positive')
-
+def read_mona_data(mode):
+    if mode not in ('Positive','Negative'):
+        raise ValueError('mode has to be Positive or Negative!')
+    mona_dire_neg ='../../../MoNA/mona_neg_cleaned.pkl'
+    mona_dire_pos ='../../../MoNA/mona_pos_cleaned_new.pkl'
+    mona = MonaDatabase(neg_dir=mona_dire_neg,pos_dir=mona_dire_pos)
+    mona.read_file(cur_mode=mode) #Negative or Positive
+    for c in tqdm(mona.compounds_list, desc="processing compounds"):
+        c.generate_mz_collection(mode=mode)
 ##########################################################################################################################
 
 #def filter_invalid_spectra(rela_inte=0.01,mode='Negative'):

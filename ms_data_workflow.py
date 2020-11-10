@@ -7,8 +7,11 @@ from msdata import *
 from result_generate import *
 import copy
 
-# m = MSData.from_files('3T3_pro','/../../../Data/3T3_pro')
-# m = MSData.from_files('3T3_pro','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/sisi_codes_test/Data/3T3_pro')
+##########read_database######
+read_mzc_data(mode='Negative')
+read_mona_data(mode='Negative')
+read_iroa_data(mode='Negative')
+###################################
 m = MSData.from_files('IROA_MS1_pos','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_09162020/IROA_MS1_pos')
 m.apply_smooth_conv(m.gaussian_kernel(2, 12), rt_range=(0., np.inf))
 
@@ -231,59 +234,59 @@ gen_all_db_results(m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,ir
 #
 #     df_mzc_sum.to_excel(cur_path2+'/'+'not_matched_mzc_new2.xlsx', index = False)
 ##############COMBINE_MATCHED_RESULTS_ALL_DB###############################
-cur_path2='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
-df_iroa = pd.read_csv(cur_path2 + '/' + 'iroa_correct_match_0.00.csv')
-df_mona = pd.read_csv(cur_path2 + '/' + 'mona_correct_match_0.00.csv')
-df_mzc = pd.read_csv(cur_path2 + '/' + 'mzc_correct_match_0.00.csv')
-df_iroa['database']='iroa'
-df_mona['database']='mona'
-df_mzc['database']='mzc'
-
-matched_all_db=pd.concat([df_iroa, df_mona, df_mzc])
-matched_all_db.drop_duplicates()
-matched_all_db['spec_matched_peaks'] = 'NA'
-matched_all_db['non_matched'] = 'NA'
-matched_all_db['num_matched'] = 'NA'
-matched_all_db['isotope'] = 'NA'
-matched_all_db['num_isotope'] = 'NA'
-matched_all_db['adduction'] = 'NA'
-matched_all_db['num_adduction'] = 'NA'
-matched_all_db['multimer'] = 'NA'
-matched_all_db['num_multimer'] = 'NA'
-# matched_all_db.to_excel(cur_path2+'/'+'matched_all_db.xlsx', index = False)
-matched_all_db.to_csv(cur_path2+'/'+'matched_all_db.csv',index=False)
-##############return_matched_peaks#########################################
-cur_path2 = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_102320_matching_3_02'
-matched_all_db2 = pd.read_csv(cur_path2 + '/' + 'matched_all_db.csv')
-# matched_all_db.rename(columns={'other_matched':'non_matched'},inplace=True)
-matched_all_db2['spec_matched_peaks'] = matched_all_db2['spec_matched_peaks'].apply(lambda x: list())
-matched_all_db2['non_matched'] = matched_all_db2['non_matched'].apply(lambda x: list())
-matched_all_db2['isotope'] = matched_all_db2['isotope'].apply(lambda x: dict())
-matched_all_db2['adduction'] = matched_all_db2['adduction'].apply(lambda x: dict())
-matched_all_db2['multimer'] = matched_all_db2['multimer'].apply(lambda x: dict())
-
-for idx in tqdm(range(len(matched_all_db.index))):
-    print(f'idx={idx}')
-    base_idx = matched_all_db.loc[idx, 'base_idx'] #base_idx#
-    print(f'base_idx={base_idx}')
-    temp_spec = copy.deepcopy(m.base_info[m.base_index[base_idx]].spectrum)
-    inchikey = matched_all_db.loc[idx, 'InChIKey']
-    if matched_all_db.loc[idx, 'database'] == 'iroa':
-        mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Negative', database=iroa)
-    elif matched_all_db.loc[idx, 'database'] == 'mona':
-        mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Negative', database=mona)
-    elif matched_all_db.loc[idx, 'database'] == 'mzc':
-        mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Negative', database=mzc)
-
-    matched_all_db.at[idx, 'spec_matched_peaks'] = mat
-    matched_all_db.at[idx, 'non_matched'] = non_mat
-    matched_all_db.at[idx, 'isotope'],matched_all_db.at[idx, 'adduction'], matched_all_db.at[idx, 'multimer']= iso,add,mul
-
-    matched_all_db.iloc[idx,10] = len(mat)
-    matched_all_db.iloc[idx,12],matched_all_db.iloc[idx,14], matched_all_db.iloc[idx,16] = len(iso),len(add),len(mul)
-
-matched_all_db.to_excel(cur_path2+'/'+'matched_all_db_update.xlsx',index=False)
-matched_all_db.to_csv(cur_path2+'/'+'matched_all_db_update.csv',index=False)
-
+# cur_path2='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
+# df_iroa = pd.read_csv(cur_path2 + '/' + 'iroa_correct_match_0.00.csv')
+# df_mona = pd.read_csv(cur_path2 + '/' + 'mona_correct_match_0.00.csv')
+# df_mzc = pd.read_csv(cur_path2 + '/' + 'mzc_correct_match_0.00.csv')
+# df_iroa['database']='iroa'
+# df_mona['database']='mona'
+# df_mzc['database']='mzc'
+#
+# matched_all_db=pd.concat([df_iroa, df_mona, df_mzc])
+# matched_all_db.drop_duplicates()
+# matched_all_db['spec_matched_peaks'] = 'NA'
+# matched_all_db['non_matched'] = 'NA'
+# matched_all_db['num_matched'] = 'NA'
+# matched_all_db['isotope'] = 'NA'
+# matched_all_db['num_isotope'] = 'NA'
+# matched_all_db['adduction'] = 'NA'
+# matched_all_db['num_adduction'] = 'NA'
+# matched_all_db['multimer'] = 'NA'
+# matched_all_db['num_multimer'] = 'NA'
+# # matched_all_db.to_excel(cur_path2+'/'+'matched_all_db.xlsx', index = False)
+# matched_all_db.to_csv(cur_path2+'/'+'matched_all_db.csv',index=False)
+# ##############return_matched_peaks#########################################
+# cur_path2 = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_102320_matching_3_02'
+# matched_all_db2 = pd.read_csv(cur_path2 + '/' + 'matched_all_db.csv')
+# # matched_all_db.rename(columns={'other_matched':'non_matched'},inplace=True)
+# matched_all_db2['spec_matched_peaks'] = matched_all_db2['spec_matched_peaks'].apply(lambda x: list())
+# matched_all_db2['non_matched'] = matched_all_db2['non_matched'].apply(lambda x: list())
+# matched_all_db2['isotope'] = matched_all_db2['isotope'].apply(lambda x: dict())
+# matched_all_db2['adduction'] = matched_all_db2['adduction'].apply(lambda x: dict())
+# matched_all_db2['multimer'] = matched_all_db2['multimer'].apply(lambda x: dict())
+#
+# for idx in tqdm(range(len(matched_all_db.index))):
+#     print(f'idx={idx}')
+#     base_idx = matched_all_db.loc[idx, 'base_idx'] #base_idx#
+#     print(f'base_idx={base_idx}')
+#     temp_spec = copy.deepcopy(m.base_info[m.base_index[base_idx]].spectrum)
+#     inchikey = matched_all_db.loc[idx, 'InChIKey']
+#     if matched_all_db.loc[idx, 'database'] == 'iroa':
+#         mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Negative', database=iroa)
+#     elif matched_all_db.loc[idx, 'database'] == 'mona':
+#         mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Negative', database=mona)
+#     elif matched_all_db.loc[idx, 'database'] == 'mzc':
+#         mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Negative', database=mzc)
+#
+#     matched_all_db.at[idx, 'spec_matched_peaks'] = mat
+#     matched_all_db.at[idx, 'non_matched'] = non_mat
+#     matched_all_db.at[idx, 'isotope'],matched_all_db.at[idx, 'adduction'], matched_all_db.at[idx, 'multimer']= iso,add,mul
+#
+#     matched_all_db.iloc[idx,10] = len(mat)
+#     matched_all_db.iloc[idx,12],matched_all_db.iloc[idx,14], matched_all_db.iloc[idx,16] = len(iso),len(add),len(mul)
+#
+# matched_all_db.to_excel(cur_path2+'/'+'matched_all_db_update.xlsx',index=False)
+# matched_all_db.to_csv(cur_path2+'/'+'matched_all_db_update.csv',index=False)
+#
 ######################################################################################
 
