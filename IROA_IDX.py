@@ -163,7 +163,8 @@ class IROADataBase:
                    cos_threshold: float = 1E-5,
                    transform: Optional[Callable[[float], float]] = None,
                    save_matched_mz: bool = True,
-                   reset_matched_mzs: bool = True) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
+                   reset_matched_mzs: bool = True,
+                   precur_mass_diff_threshold:Optional[Numeric]=np.inf) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
             raise ValueError("mode can only be 'Negative' or 'Positive'.")
@@ -189,7 +190,7 @@ class IROADataBase:
                     #                     reset_matched_idx_mz=reset_matched_idx_mz)
                     if s.precursor:
                         for mz in target.mz:
-                            if (abs(s.precursor-mz)/s.precursor) * 1E6 <= 70:
+                            if (abs(s.precursor-mz)/s.precursor) * 1E6 <= precur_mass_diff_threshold:
                                 if_choose_s = True
                     if not s.precursor:
                         if_choose_s = True

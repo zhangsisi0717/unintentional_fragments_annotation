@@ -8,11 +8,18 @@ from result_generate import *
 import copy
 
 ##########read_database######
-read_mzc_data(mode='Negative')
-read_mona_data(mode='Negative')
-read_iroa_data(mode='Negative')
+mzc = read_mzc_data(mode='Positive')
+mona = read_mona_data(mode='Positive')
+iroa = read_iroa_data(mode='Positive')
 ###################################
+# m = MSData.from_files('Fructose_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/Fructose_neg')
+# m = MSData.from_files('IROA_MS1_neg_02','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/multi_samples_prc/IROA_MS1_neg_02')
 m = MSData.from_files('IROA_MS1_pos','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_09162020/IROA_MS1_pos')
+# m = MSData.from_files('IROA_MS1_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_09162020/IROA_MS1_neg')
+
+# m = MSData.from_files('M3T_MS1_neg_CID_0','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_09162020/M3T_MS1_neg_CID_0')
+# m = MSData.from_files('rw_stds','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/rw_stds')
+
 m.apply_smooth_conv(m.gaussian_kernel(2, 12), rt_range=(0., np.inf))
 
 #peak_detection_options = {'height': 1E-2, 'range_threshold': 1E-4, 'prominence': 1E-2}
@@ -21,7 +28,7 @@ m.apply_smooth_conv(m.gaussian_kernel(2, 12), rt_range=(0., np.inf))
 #delta = (rts[1:] - rts[:-1]).mean(), width = width / delta
 
 #afer peak_detection:range_threshold = peak_heights * range_threshold, beyong range,set to 0
-peak_detection_options = {'height': 0.1, 'range_threshold': 0.10, 'prominence': 0.1}
+peak_detection_options = {'height': 0.1, 'range_threshold': 0.1, 'prominence': 0.1}
 m.perform_feature_peak_detection(**peak_detection_options)
 m.remove_duplicates_detection()
 # m.perform_feature_peak_detection()
@@ -34,7 +41,7 @@ gen_base_opt = dict(
     min_sin=5E-3,  # min_sin=5E-2,
     min_base_err=5E-4,  # min_base_err=5E-2,
     min_rt_diff=1.,
-    max_cos_sim=0.90
+    max_cos_sim=0.9
 )
 m.generate_base(reset=True, allowed_n_overlap=(1,2), **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=2, **gen_base_opt)
@@ -53,21 +60,20 @@ m.perform_peak_decomposition(l1=1.)
 spec_params = dict(
     threshold=1E-5,
     # threshold=0.,
-    max_rt_diff=4.,
+    max_rt_diff=4.,  ##original: 4.
     # max_rt_diff=np.inf,
     # max_mse=2E-2,
     max_mse=np.inf, ###np.inf
     # mz_upperbound=5.
     mz_upperbound=np.inf,
     # min_cos=.99
-    min_cos=0.85
+    min_cos=0.85 ##orginal:0.85
 )
-m.gen_spectrum(0, plot=False, load=False, **spec_params)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)
 
 # ###check base group and find_match within each group and plot###
-test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
+# test_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
 final_matching_results = []
 # save_index = [i for i in range(len(m.base_index))if i % 30 == 0]
 # save_index.append(len(m.base_index)-1)
@@ -92,12 +98,12 @@ for i in range(len(m.base_index)):
                                      base_index_relative=i,
                                      base_index_abs=m.base_index[i],
                                      mode='Positive')
-        # result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mzc,transform=None)
-        result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=mona,transform=None) ##start from 0th match##
-        result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=5,database=iroa,transform=None)
+        result.gen_mzc_matching_result(total_layer_matching=1,n_candidates_further_matched=4,database=mzc,transform=None)
+        result.gen_mona_matching_result(total_layer_matching=1,n_candidates_further_matched=4,database=mona,transform=None) ##start from 0th match##
+        result.gen_iroa_matching_result(total_layer_matching=1,n_candidates_further_matched=4,database=iroa,transform=None)
     # result.gen_recur_matched_peaks()
     # result.count_total_matched_peaks()
-    result.summarize_matching_re_all_db(mzc=False, mona=True, iroa=True)
+    result.summarize_matching_re_all_db(mzc=True, mona=True, iroa=True)
     result.remove_db()
     final_matching_results.append(result)
     # if i in save_index:
@@ -113,31 +119,33 @@ end = datetime.datetime.now()
 print(end - start)
 
 ######################generate matching results file#####################################################################
+# goundtruth_file_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/iroa_name_final.csv'
+# path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result/neg_102320_matching_3_03'
 goundtruth_file_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/iroa_name_final_pos.csv'
-path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
+path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_5'
 grountruth_xlx = path_to_store+'/'+'df_truth_0.00.xlsx'
 grountruth_csv = path_to_store+'/'+'df_truth_0.00.csv'
 
 gen_result_groundtruth(m=m,goundtruth_file_path=goundtruth_file_path,path_to_store_xlx=grountruth_xlx,path_to_store_csv=grountruth_csv)
 
 
-correct_match_xlx = path_to_store+'/'+ 'mona' +'_correct_match_0.00.xlsx'
-correct_match_csv = path_to_store+'/'+ 'mona'+'_correct_match_0.00.csv'
-gen_correct_matched_results(m,'mona',final_matching_results,goundtruth_file_path,correct_match_xlx,correct_match_csv)
+correct_match_xlx = path_to_store+'/'+ 'mzc' +'_correct_match_0.00.xlsx'
+correct_match_csv = path_to_store+'/'+ 'mzc'+'_correct_match_0.00.csv'
+gen_correct_matched_results(m,'mzc',final_matching_results,goundtruth_file_path,correct_match_xlx,correct_match_csv)
 
 # correct_match_path = cur_path + '/' + 'mzc_correct_match_0.00.csv'
-not_matched_xlx = path_to_store+'/'+'not_matched_mona_new2.xlsx'
+not_matched_xlx = path_to_store+'/'+'not_matched_mzc_new2_pos.xlsx'
 df_truth_path = path_to_store + '/' + 'df_truth_0.00.csv'
-gen_not_matched_results(database=mona,df_truth_path=df_truth_path,correct_match_path=correct_match_csv,path_to_store=not_matched_xlx)
+gen_not_matched_results(database=mzc,df_truth_path=df_truth_path,correct_match_path=correct_match_csv,path_to_store=not_matched_xlx)
 ################################generate matched fragments all db_based on groundtruth#####################################################
 import pandas as pd
-cur_path2='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
+cur_path2='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_5'
 iroa_path = cur_path2 + '/' + 'iroa_correct_match_0.00.csv'
 mona_path = cur_path2 + '/' + 'mona_correct_match_0.00.csv'
 mzc_path = cur_path2 + '/' + 'mzc_correct_match_0.00.csv'
 save_path_xls = cur_path2+'/'+'matched_all_db_update.xlsx'
 save_path_csv = cur_path2+'/'+'matched_all_db_update.csv'
-gen_all_db_results(m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,iroa,mzc,mona)
+gen_all_db_results('Positive',m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,iroa,mzc,mona)
 ###################################generate_correctly_matched_compounds##########################
 # goundtruth_file_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/iroa_name_final_pos.csv'
 # path_to_store='/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'
@@ -161,9 +169,9 @@ gen_all_db_results(m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,ir
 #
 # # with open(path_to_store+'/'+'m.neg_mse5E4_rangethre0.10_Ker2_12_mincos9590_3.pkl','wb') as f:
 # #     pkl.dump(m.base_info,f)
-# num_f=[]
-# for idx,con in m.base_info.items():
-#     num_f.append(len(con.spectrum.mz))
+num_f=[]
+for idx,con in m.base_info.items():
+    num_f.append(len(con.spectrum.mz))
 #
 # #########################################generate_not_matched_compounds##########################################
 # cur_path = '/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/IROA_MS1_matching_result_pos/pos_ms1_matching_1'

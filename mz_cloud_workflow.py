@@ -12,6 +12,7 @@ def read_mzc_data(mode):
     for c in tqdm(mzc.compounds, desc="reading MZcloud compounds"):
         c.generate_mz_collection(threshold=1E-3, mode=mode) #Negative or Positive#
         c.get_precursor(mode=mode)  #Negative or Positive#
+    return mzc
 
 
 

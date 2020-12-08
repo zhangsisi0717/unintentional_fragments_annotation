@@ -129,7 +129,7 @@ def gen_not_matched_results(database,df_truth_path=None,correct_match_path=None,
     not_matched_df.to_excel(path_to_store, index=False)
 
 
-def gen_all_db_results(m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,iroa,mzc,mona):
+def gen_all_db_results(mode,m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_csv,iroa,mzc,mona):
     df_iroa = pd.read_csv(iroa_path)
     df_mona = pd.read_csv(mona_path)
     df_mzc = pd.read_csv(mzc_path)
@@ -154,11 +154,11 @@ def gen_all_db_results(m,mona_path,iroa_path,mzc_path,save_path_xls,save_path_cs
         temp_spec = copy.deepcopy(m.base_info[m.base_index[base_idx]].spectrum)
         inchikey = matched_all_db.loc[idx, 'InChIKey']
         if matched_all_db.loc[idx, 'database'] == 'iroa':
-            mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Positive', database=iroa)
+            mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode=mode, database=iroa)
         elif matched_all_db.loc[idx, 'database'] == 'mona':
-            mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Positive', database=mona)
+            mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode=mode, database=mona)
         elif matched_all_db.loc[idx, 'database'] == 'mzc':
-            mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode='Positive', database=mzc)
+            mat, non_mat,iso,add,mul = temp_spec.gen_matched_peaks_compound(inchIkey=inchikey, mode=mode, database=mzc)
 
         matched_all_db.at[idx, 'spec_matched_peaks'] = mat
         matched_all_db.at[idx, 'non_matched'] = non_mat

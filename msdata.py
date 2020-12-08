@@ -126,6 +126,7 @@ class Spectrum:
 
     spectrum_list: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
     spectrum_list_abs: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
+    spectrum_list_rela: Optional[List[Tuple[float, float]]] = field(default=None, repr=False)
     mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     relative_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
@@ -139,7 +140,7 @@ class Spectrum:
     reduced_mz: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     reduced_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     reduced_rela_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
-    rela_threshold_reduce: Optional[Numeric] = field(default=0.01, repr=False, init=False)
+    rela_threshold_reduce: Optional[Numeric] = field(default=0.001, repr=False, init=False)
     reduced_n_peaks:int = field(default=0, repr=True, init=False)
 
     def __post_init__(self):
@@ -179,12 +180,13 @@ class Spectrum:
 
         self.bin_vec = BinnedSparseVector(ppm=self.bin_ppm)
         self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity)
+        self.spectrum_list_rela = list(zip(self.mz,self.relative_intensity))
         if not self.spectrum_list_abs:
             self.spectrum_list_abs = self.spectrum_list
 
     def compare_spectrum_plot(self, other,
                               dpi: Numeric = 200, figsize: Tuple[Numeric, Numeric] = (8, 6),
-                              threshold: float = 1E-2,
+                              threshold: float = 1E-4,
                               mz_delta=20.,
                               label=tuple(['self.spectrum', 'other.spectrum']),
                               **kwargs):
@@ -307,11 +309,11 @@ class Spectrum:
 
         return [{'ia': i, 'ib': j, 'mza': self.mz[i], 'mzb': other.mz[j],'ppm': 1E6 * np.abs(self.mz[i] - other.mz[j]) / self.mz[i], 'coeff': s[i][j]} for i, j in indices]
 
-    def match_df(self, other, ppm=20, threshold=1E-8):
+    def match_df(self, other, ppm=35, threshold=1E-8):
         from pandas import DataFrame
         return DataFrame(self.match_list(other=other, ppm=ppm, threshold=threshold))
 
-    def true_inner(self,other, ppm: Optional[float] = 30, func=None, vectorize=True):
+    def true_inner(self,other, ppm: Optional[float] = 35, func=None, vectorize=True):
 
         s = self.match_matrix(other=other, ppm=ppm)
 
@@ -336,8 +338,8 @@ class Spectrum:
             intb_t = other.intensity
         return inta_t.dot(s.dot(intb_t))
 
-    def cos(self, other, ppm=40, matched_ppm=60, func=None, vectorize=True):
-        df = self.match_df(other=other, ppm=20, threshold=1E-8)
+    def cos(self, other, ppm=70, matched_ppm=70, func=None, vectorize=True):
+        df = self.match_df(other=other, ppm=35, threshold=1E-8)
         cosine = self.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize) / np.sqrt(
             self.true_inner(other=self, ppm=ppm, func=func, vectorize=vectorize)
             * other.true_inner(other=other, ppm=ppm, func=func, vectorize=vectorize))
@@ -1670,7 +1672,7 @@ class MSData:
                 plt.imshow(cos)  # always show diagonal term as 1
                 plt.title("cos sim, max = {:.4f} @ ({}, {})".format(max_cos_sim, arg_max[0], arg_max[1]))
                 cbar = plt.colorbar()
-                # cbar.ax.set_ylabel('cos similarity', rotation=270)
+                cbar.ax.set_ylabel('cos similarity', rotation=270, labelpad=15)
 
         if zero_diag:
             return zero_diag_cos
@@ -1788,10 +1790,10 @@ class MSData:
 
             self._decomposition_results[ft_idx] = decompose_info  # this line should be unnecessary
 
-    def spectrum_coefficient(self, base_index: int, threshold: float = 1E-2,  ##or threshold = 1E-2
+    def spectrum_coefficient(self, base_index: int, threshold: float = 1E-2,
                              max_mse: float = 1E-2, max_rt_diff: float = .5,
                              min_cos: float = 0.9,
-                             save: bool = True, load: bool = True) -> np.ndarray:
+                             save: bool = True, load: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         ##return:normalized coefficient of the basis
         if base_index < 0 or base_index >= self.n_base:  # index out of range
             raise ValueError
@@ -1844,8 +1846,8 @@ class MSData:
             abs_coefficient = np.copy(coefficient)
             coefficient /= np.max(coefficient)
 
-        coefficient[coefficient < threshold] = 0.
         abs_coefficient[coefficient < threshold] = 0.
+        coefficient[coefficient < threshold] = 0.
         n_components = np.sum(coefficient > 0.)
 
         if save:  # save

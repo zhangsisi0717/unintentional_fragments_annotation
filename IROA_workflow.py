@@ -9,4 +9,4 @@ def read_iroa_data(mode):
     for c in tqdm(iroa.compounds_list, desc="reading IROA compounds"):
         c.generate_mz_collection(mode=mode) ##'Negative or Positive#
 
-
+    return iroa

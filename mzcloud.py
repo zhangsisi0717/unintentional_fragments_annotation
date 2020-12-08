@@ -691,11 +691,15 @@ class MZCloud:
                    cos_threshold: float = 1E-4,
                    transform: Optional[Callable[[float], float]] = None,
                    save_matched_mz: bool = True,
-                   reset_matched_mzs: bool = True
+                   reset_matched_mzs: bool = True,
+                   precur_mass_diff_threshold: Optional[Numeric] = np.inf
                    ) -> List[Tuple[MZCloudCompound, MZCloudSpectrum, float]]:
 
         if mode not in ('Negative', 'Positive'):
             raise ValueError("mode can only be 'Negative' or 'Positive'.")
+
+        if mode == 'Positive':
+            precur_mass_diff_threshold = 0.01
 
         candidates: List[MZCloudCompound] = []
 
@@ -719,7 +723,7 @@ class MZCloud:
                         #                     reset_matched_idx_mz=reset_matched_idx_mz)
                         if s.PrecursorPeaks:
                             for mz in target.mz:
-                                if (abs(s.PrecursorPeaks[0]['MZ']-mz)/s.PrecursorPeaks[0]['MZ']) * 1E6 <= 70:
+                                if (abs(s.PrecursorPeaks[0]['MZ']-mz)/s.PrecursorPeaks[0]['MZ']) <= precur_mass_diff_threshold:
                                     if_choose_s = True
                         if not s.PrecursorPeaks:
                             if_choose_s = True

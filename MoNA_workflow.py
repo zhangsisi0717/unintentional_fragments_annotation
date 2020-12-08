@@ -8,6 +8,7 @@ def read_mona_data(mode):
     mona.read_file(cur_mode=mode) #Negative or Positive
     for c in tqdm(mona.compounds_list, desc="processing compounds"):
         c.generate_mz_collection(mode=mode)
+    return mona
 ##########################################################################################################################
 
 #def filter_invalid_spectra(rela_inte=0.01,mode='Negative'):
