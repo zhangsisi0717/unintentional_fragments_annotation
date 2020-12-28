@@ -8,9 +8,9 @@ from result_generate import *
 import copy
 
 ##########read_database######
-mzc = read_mzc_data(mode='Positive')
-mona = read_mona_data(mode='Positive')
-iroa = read_iroa_data(mode='Positive')
+mzc = read_mzc_data(mode='Negative')
+mona = read_mona_data(mode='Negative')
+iroa = read_iroa_data(mode='Negative')
 ###################################
 # m = MSData.from_files('Fructose_neg','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/Fructose_neg')
 # m = MSData.from_files('IROA_MS1_neg_02','/Users/sisizhang/Dropbox/Share_Yuchen/Projects/in_source_fragments_annotation/IROA/multi_samples_prc/IROA_MS1_neg_02')

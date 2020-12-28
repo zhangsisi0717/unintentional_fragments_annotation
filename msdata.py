@@ -375,159 +375,137 @@ class ReconstructedSpectrum(Spectrum):
             self.bin_vec = BinnedSparseVector()
             self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity_abs_recon)
 
-    # def gen_matched_mz(self, other: [Spectrum], reset_matched_mz=True):
-    #     if reset_matched_mz:
-    #         self.matched_mz = []
-    #         self.mis_matched_mz = []
-    #     recon_matched_mz = []
-    #     recon_mis_matched_mz = []
-    #     if other.bin_vec.matched_idx_mz:
-    #         for idx in other.bin_vec.matched_idx_mz['matched_idx']:
-    #             for mz, idx_int in self.bin_vec.mz_idx_dic.items():
-    #                 if idx_int[0] == idx:
-    #                     recon_matched_mz.append((mz, idx_int[1]))
-    #
-    #         for mz, idx_int in self.bin_vec.mz_idx_dic.items():
-    #             if (mz, idx_int[1]) not in recon_matched_mz:
-    #                 recon_mis_matched_mz.append((mz, idx_int[1]))
-    #
-    #         self.matched_mz = recon_matched_mz
-    #         self.mis_matched_mz = recon_mis_matched_mz
-    #
-    #     return recon_matched_mz
-
     def gen_matched_mz(self, other: [Spectrum], reset_matched_mz=True):
         if reset_matched_mz:
             self.matched_mz = list()
             self.mis_matched_mz = list()
-            if other.matched_mzs:
-                self.matched_mz = [tuple(i) for i in other.matched_mzs]
-                for mz, ints in self.spectrum_list_abs:
-                    if (mz, ints) not in self.matched_mz and (mz,ints) not in self.mis_matched_mz:
-                        self.mis_matched_mz.append((mz, ints))
-            else:
-                self.mis_matched_mz = self.spectrum_list_abs
+        if other.matched_mzs:
+            self.matched_mz = [tuple(i) for i in other.matched_mzs]
+            self.mis_matched_mz = [(i,j) for i,j in self.spectrum_list_abs if (i,j) not in self.matched_mz and (i,j) not in self.mis_matched_mz]
+        else:
+            self.mis_matched_mz = self.spectrum_list_abs
 
     def check_isotope(self, ppm=30, reset=True):
         if reset:
             self.matched_isotope_mz = dict()
         percen_thre = [0.20, 0.1, 0.05]
         isotope_mz = dict()
-        if self.matched_mz:
-            for mz, intensity in self.matched_mz:  ##matched_mz
-                for mis_mz, mis_intensity in self.mis_matched_mz:  ##mis_matched_mz
-                    mz_13C = [mz + 1.003354, mz + 2 * 1.003354, mz + 3 * 1.003354]  ###13C of matched mz
-                    for j in range(len(mz_13C)):
-                        if abs(mis_mz - mz_13C[j]) / mz_13C[j] * 1E6 <= ppm * 2:
-                            if mis_intensity <= intensity * percen_thre[j]:
-                                if not isotope_mz.get((mis_mz, mis_intensity)):
-                                    isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
-                                    self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                    if (mis_mz,mis_intensity) not in self.matched_mz:
-                                        self.matched_mz.append((mis_mz, mis_intensity))
+        if not self.matched_mz:
+            return isotope_mz
+        for mz, intensity in self.matched_mz:  ##matched_mz
+            mz_13C = [mz + 1.003354, mz + 2 * 1.003354, mz + 3 * 1.003354]  ###13C of matched mz
+            for mis_mz, mis_intensity in self.mis_matched_mz:  ##mis_matched_mz
+                for j in range(len(mz_13C)):
+                    if (abs(mis_mz - mz_13C[j]) / mz_13C[j]) * 1E6 <= ppm * 2 and mis_intensity <= intensity*percen_thre[j]:
+                        isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
+                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                    else:continue
 
-            self.matched_isotope_mz = isotope_mz
+                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                        self.matched_mz.append((mis_mz, mis_intensity))
+
+        self.matched_isotope_mz = isotope_mz
         return isotope_mz
 
     def check_adduction_list(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
                              reset: bool = True, mode: str = 'Negative'):
         ##exact_mass-adduction##
+        if mode not in ('Negative', 'Positive'):
+            raise TypeError('mode must be Negative or Positive')
         if reset:
             self.matched_adduction = dict()
-        if molecular_weight:
-            adduction_list = {'Positive': {'M+H-2H2O': (35.012788115999996, 1),
-                                           'M+H-H2O': (17.00278811000001, 1),
-                                           'M-H2O+NH4': (-0.022711889999982304, 1),
-                                           'M+H': (-1.0073118899999827, 1),
-                                           'M+Li': (-7.016011889999987, 1),
-                                           'M+NH4': (-18.03381188999998, 1),
-                                           'M+Na': (-22.989211890000007, 1),
-                                           'M+CH3OH+H': (-33.03351189, 1),
-                                           'M+K': (-38.96311188999999, 1),
-                                           'M+ACN+H': (-42.03381188999998, 1),
-                                           'M+2Na-H': (-44.97111189, 1),
-                                           'M+ACN+Na': (-64.01581188999998, 1),
-                                           '[M+H+Na]2+': (molecular_weight-(molecular_weight+1.0078+22.9897)/2,2),
-                                           '[M+2H]2+': (molecular_weight-(molecular_weight+2*1.0078)/2, 2),
-                                           '[M+2Na]2+': (molecular_weight-(molecular_weight+2*22.9897)/2, 2),
-                                           '[M+3H]3+': (molecular_weight-(molecular_weight+3*1.0078)/3, 3),
-                                           '[M+2H+Na]3+': (molecular_weight-(molecular_weight+2*1.0078+22.9897)/3,3),
-                                           '[M+H+2Na]3+': (molecular_weight-(molecular_weight+1.0078+2*22.9897)/3,3)},
-                              'Negative': {'M-H': (1.0072881100000188, 1),
-                                           'M+F': (-18.998411884000006, 1),
-                                           'M-H2O-H': (-19.01838811600001, 1),
-                                           'M+Na-2H': (-20.974711883999987, 1),
-                                           'M+Cl': (-34.96941188400001, 1),
-                                           'M+K-2H': (-36.948611884, 1),
-                                           'M+FA-H': (-44.998211884, 1),
-                                           'M+CH3COO': (-59.013811884000006, 1),
-                                           '[2M-2H+Na]-': (molecular_weight-(2*molecular_weight-1.0078*2+22.9897),1),
-                                           '[M-2H]2-': (molecular_weight-(molecular_weight-2*1.0078)/2, 2),
-                                           '[M-3H]3-': (molecular_weight-(molecular_weight-3*1.0078)/3, 3)}}
+        if not molecular_weight:
+            return {}
+        adduction_list = {'Positive': {'M+H-2H2O': (35.012788115999996, 1),
+                                       'M+H-H2O': (17.00278811000001, 1),
+                                       'M-H2O+NH4': (-0.022711889999982304, 1),
+                                       'M+H': (-1.0073118899999827, 1),
+                                       'M+Li': (-7.016011889999987, 1),
+                                       'M+NH4': (-18.03381188999998, 1),
+                                       'M+Na': (-22.989211890000007, 1),
+                                       'M+CH3OH+H': (-33.03351189, 1),
+                                       'M+K': (-38.96311188999999, 1),
+                                       'M+ACN+H': (-42.03381188999998, 1),
+                                       'M+2Na-H': (-44.97111189, 1),
+                                       'M+ACN+Na': (-64.01581188999998, 1),
+                                       '[M+H+Na]2+': (molecular_weight-(molecular_weight+1.0078+22.9897)/2,2),
+                                       '[M+2H]2+': (molecular_weight-(molecular_weight+2*1.0078)/2, 2),
+                                       '[M+2Na]2+': (molecular_weight-(molecular_weight+2*22.9897)/2, 2),
+                                       '[M+3H]3+': (molecular_weight-(molecular_weight+3*1.0078)/3, 3),
+                                       '[M+2H+Na]3+': (molecular_weight-(molecular_weight+2*1.0078+22.9897)/3,3),
+                                       '[M+H+2Na]3+': (molecular_weight-(molecular_weight+1.0078+2*22.9897)/3,3)},
+                          'Negative': {'M-H': (1.0072881100000188, 1),
+                                       'M+F': (-18.998411884000006, 1),
+                                       'M-H2O-H': (-19.01838811600001, 1),
+                                       'M+Na-2H': (-20.974711883999987, 1),
+                                       'M+Cl': (-34.96941188400001, 1),
+                                       'M+K-2H': (-36.948611884, 1),
+                                       'M+FA-H': (-44.998211884, 1),
+                                       'M+CH3COO': (-59.013811884000006, 1),
+                                       '[2M-2H+Na]-': (molecular_weight-(2*molecular_weight-1.0078*2+22.9897),1),
+                                       '[M-2H]2-': (molecular_weight-(molecular_weight-2*1.0078)/2, 2),
+                                       '[M-3H]3-': (molecular_weight-(molecular_weight-3*1.0078)/3, 3)}}
 
-            matched_adduction = dict()
-            if mode not in ('Negative', 'Positive'):
-                raise TypeError('mode must be Negative or Positive')
-            else:
-                for mis_mz in self.mis_matched_mz:
-                    for ad, mz in adduction_list[mode].items():
-                        if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
-                            matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
-                            if mis_mz not in self.matched_mz:
-                                self.matched_mz.append(mis_mz)
-                            self.mis_matched_mz.remove(mis_mz)
-                self.matched_adduction = matched_adduction
-
+        matched_adduction = dict()
+        for mis_mz in self.mis_matched_mz:
+            for ad, mz in adduction_list[mode].items():
+                if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
+                    matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
+                else:continue
+                if mis_mz not in self.matched_mz:
+                    self.matched_mz.append(mis_mz)
+                self.mis_matched_mz.remove(mis_mz)
+        self.matched_adduction = matched_adduction
         return self.matched_adduction
 
     def check_multimer(self, molecular_weight: Numeric = None, ppm: Optional[Numeric] = 30,
                        reset: bool = True, mode: str = 'Negative'):
         if reset:
             self.matched_multimer = dict()
-        if molecular_weight:
-            if mode not in ('Negative', 'Positive'):
-                raise TypeError('mode must be Negative or Positive')
-            else:
-                if mode == 'Negative':
-                    for mz, intensity in self.matched_mz:
-                        for mis_mz, mis_intensity in self.mis_matched_mz:
-                            if (abs(mz * 2 + 1.0073118899999827 - mis_mz) / (
-                                    mz * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
-                                self.matched_multimer[(mis_mz, mis_intensity)] =\
-                                    ('dimer of frag/precur', (mz, intensity))
-                                self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                if (mis_mz,mis_intensity) not in self.matched_mz:
-                                    self.matched_mz.append((mis_mz, mis_intensity))
+        if not molecular_weight:
+            return {}
+        if mode not in ('Negative', 'Positive'):
+            raise TypeError('mode must be Negative or Positive')
+        if mode == 'Negative':
+            for mz, intensity in self.matched_mz:
+                for mis_mz, mis_intensity in self.mis_matched_mz:
+                    if (abs(mz * 2 + 1.0073118899999827 - mis_mz) / (
+                            mz * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
+                        self.matched_multimer[(mis_mz, mis_intensity)] =\
+                            ('dimer of frag/precur', (mz, intensity))
+                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                    else:continue
+                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                        self.matched_mz.append((mis_mz, mis_intensity))
 
-                            if (abs(molecular_weight * 2 - 1.0073118899999827 - mis_mz) / (
-                                    molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
-                                if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
-                                    if (mis_mz, mis_intensity) not in self.matched_mz:
-                                        self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
-                                                                                          molecular_weight)
-                                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                        if (mis_mz,mis_intensity) not in self.matched_mz:
-                                            self.matched_mz.append((mis_mz, mis_intensity))
-                elif mode == 'Positive':
-                    for mz, intensity in self.matched_mz:
-                        for mis_mz, mis_intensity in self.mis_matched_mz:
-                            if (abs(mz * 2 - 1.0073118899999827 - mis_mz) / (
-                                    mz * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
-                                self.matched_multimer[(mis_mz, mis_intensity)] = (
-                                'dimer of frag/precur', (mz, intensity))
-                                self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                if (mis_mz,mis_intensity) not in self.matched_mz:
-                                    self.matched_mz.append((mis_mz, mis_intensity))
+            for mis_mz, mis_intensity in self.mis_matched_mz:  ##find dimer of precusor#
+                if not (abs(molecular_weight * 2 - 1.0073118899999827 - mis_mz) / (molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
+                    continue
+                if (mis_mz, mis_intensity) not in self.matched_multimer.keys() and (mis_mz, mis_intensity) not in self.matched_mz:
+                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',molecular_weight)
+                    self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                    self.matched_mz.append((mis_mz, mis_intensity))
 
-                            if (abs(molecular_weight * 2 + 1.0073118899999827 - mis_mz) / (
-                                    molecular_weight * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
-                                if (mis_mz, mis_intensity) not in self.matched_multimer.keys():
-                                    if (mis_mz, mis_intensity) not in self.matched_mz:
-                                        self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',
-                                                                                          molecular_weight)
-                                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                                        if (mis_mz,mis_intensity) not in self.matched_mz:
-                                            self.matched_mz.append((mis_mz, mis_intensity))
+        elif mode == 'Positive':
+            for mz, intensity in self.matched_mz:
+                for mis_mz, mis_intensity in self.mis_matched_mz:
+                    if (abs(mz * 2 - 1.0073118899999827 - mis_mz) / (
+                            mz * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
+                        self.matched_multimer[(mis_mz, mis_intensity)] = (
+                        'dimer of frag/precur', (mz, intensity))
+                        self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                    else:continue
+                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                        self.matched_mz.append((mis_mz, mis_intensity))
+
+            for mis_mz, mis_intensity in self.mis_matched_mz:  ##find dimer of precusor#
+                if not (abs(molecular_weight * 2 + 1.0073118899999827 - mis_mz) / (
+                        molecular_weight * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
+                    continue
+                if (mis_mz, mis_intensity) not in self.matched_multimer.keys() and (mis_mz, mis_intensity) not in self.matched_mz:
+                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',molecular_weight)
+                    self.mis_matched_mz.remove((mis_mz, mis_intensity))
+                    self.matched_mz.append((mis_mz, mis_intensity))
 
         return self.matched_multimer
 
@@ -551,77 +529,38 @@ class ReconstructedSpectrum(Spectrum):
             self.mis_matched_mz = None
         res=[]
         mw = None
-        if database.name == 'iroa':
-            cor_candi=[]
+        cor_candi=[]
+        if database.name == 'iroa' or database.name == 'mona':
             for can in database.compounds_list:
                 if can.InChIKey == inchIkey:
                     cor_candi.append(can)
             for candi in cor_candi:
                 for s in candi.spectra_1 + candi.spectra_2:
-                    if s.mode == mode:
-                        if_choose_s = False
-                        if s.precursor:
-                            for mz in self.mz:
-                                if (abs(s.precursor-mz)/s.precursor) * 1E6 <= 70:
-                                    if_choose_s = True
-                        if not s.precursor:
-                            if_choose_s = True
-
-                        if if_choose_s:
-                            cos, matched_mzs = self.cos(other=s,func=None)
-                            s.matched_mzs = matched_mzs
-                            if cos > 1E-4:
-                                res.append((cor_candi[0],s, cos))
+                    if not s.mode == mode:
+                        continue
+                    cos, matched_mzs = self.cos(other=s,func=None)
+                    s.matched_mzs = matched_mzs
+                    if cos > 1E-4:
+                        res.append((cor_candi[0],s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
-            if res:
+            if res and database.name == 'iroa':
                 mw = res[0][0].MolecularWeight
-        elif database.name == 'mona':
-            cor_candi=[]
-            for can in database.compounds_list:
-                if can.InChIKey == inchIkey:
-                    cor_candi.append(can)
-            for candi in cor_candi:
-                for s in candi.spectra_1 + candi.spectra_2:
-                    if s.mode == mode:
-                        if_choose_s = False
-                        if s.precursor:
-                            for mz in self.mz:
-                                if (abs(s.precursor-mz)/s.precursor) * 1E6 <= 70:
-                                    if_choose_s = True
-                        if not s.precursor:
-                            if_choose_s = True
-
-                        if if_choose_s:
-                            cos, matched_mzs = self.cos(other=s,func=None)
-                            s.matched_mzs = matched_mzs
-                            if cos > 1E-4:
-                                res.append((cor_candi[0],s, cos))
-            res.sort(key=lambda x: x[2], reverse=True)
-            if res:
+            elif res and database.name == 'mona' :
                 mw = res[0][0].total_exact_mass
 
         elif database.name == 'mzc':
-            cor_candi=[]
             for can in database.compounds:
                 if can.InChIKey == inchIkey:
                     cor_candi.append(can)
             for candi in cor_candi:
                 for t in candi.spectra_1 + candi.spectra_2:
                     for s in t:
-                        if s.Polarity == mode:
-                            if_choose_s = False
-                            if s.PrecursorPeaks:
-                                for mz in self.mz:
-                                    if (abs(s.PrecursorPeaks[0]['MZ']-mz)/s.PrecursorPeaks[0]['MZ']) * 1E6 <= 70:
-                                        if_choose_s = True
-                            if not s.PrecursorPeaks:
-                                if_choose_s = True
-
-                            if if_choose_s:
-                                cos, matched_mzs = self.cos(other=s,func=None)
-                                s.matched_mzs = matched_mzs
-                                if cos > 1E-4:
-                                    res.append((cor_candi[0],s, cos))
+                        if not s.Polarity == mode:
+                            continue
+                        cos, matched_mzs = self.cos(other=s,func=None)
+                        s.matched_mzs = matched_mzs
+                        if cos > 1E-4:
+                            res.append((cor_candi[0],s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
             if res:
                 mw = res[0][0].MolecularWeight
