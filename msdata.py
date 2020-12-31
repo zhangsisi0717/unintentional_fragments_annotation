@@ -12,7 +12,6 @@ from binned_vec import *
 import copy
 
 
-
 class DimensionMismatchError(Exception):
     def __init__(self, message=None):
         self.message = message
@@ -49,7 +48,7 @@ class PeakDetectionResults:
     absolute_index: [int] = None
     n_peaks: Optional[int] = None  # number of peaks
     mz_range: Tuple[float, float] = None
-    rt_range: Optional[Tuple[Numeric, Numeric]] = field(default=None,repr=False)
+    rt_range: Optional[Tuple[Numeric, Numeric]] = field(default=None, repr=False)
 
     # peak position
     peaks: Optional[np.ndarray] = field(default=None, repr=False)
@@ -141,7 +140,7 @@ class Spectrum:
     reduced_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     reduced_rela_intensity: Optional[np.ndarray] = field(default=None, repr=False, init=False)
     rela_threshold_reduce: Optional[Numeric] = field(default=0.001, repr=False, init=False)
-    reduced_n_peaks:int = field(default=0, repr=True, init=False)
+    reduced_n_peaks: int = field(default=0, repr=True, init=False)
 
     def __post_init__(self):
         if self.spectrum_list is not None:
@@ -161,17 +160,18 @@ class Spectrum:
                 self.n_peaks = len(self.mz)
                 self.spectrum_list = list(zip(self.mz, self.intensity))
                 self.max_intensity = 0. if self.n_peaks == 0 else np.max(self.intensity)
-                self.spectrum_list_reduced = [(mz, ints) for mz, ints in self.spectrum_list if ints > self.max_intensity * self.rela_threshold_reduce]
+                self.spectrum_list_reduced = [(mz, ints) for mz, ints in self.spectrum_list if
+                                              ints > self.max_intensity * self.rela_threshold_reduce]
                 self.reduced_mz = np.array([mz for mz, intensity in self.spectrum_list_reduced])
                 self.reduced_intensity = np.array([intensity for mz, intensity in self.spectrum_list_reduced])
                 self.reduced_n_peaks = len(self.reduced_intensity)
 
         else:
-                raise DimensionMismatchError('length of mz must be equal to length of intensity!')
+            raise DimensionMismatchError('length of mz must be equal to length of intensity!')
 
         if self.max_intensity > 0.:
             self.relative_intensity = self.intensity / self.max_intensity
-            self.reduced_rela_intensity = self.reduced_intensity/self.max_intensity
+            self.reduced_rela_intensity = self.reduced_intensity / self.max_intensity
         else:
             self.relative_intensity = self.intensity
         if self.n_peaks > 0:
@@ -180,7 +180,7 @@ class Spectrum:
 
         self.bin_vec = BinnedSparseVector(ppm=self.bin_ppm)
         self.bin_vec.add(x=self.mz, y=self.relative_intensity, y_abs=self.intensity)
-        self.spectrum_list_rela = list(zip(self.mz,self.relative_intensity))
+        self.spectrum_list_rela = list(zip(self.mz, self.relative_intensity))
         if not self.spectrum_list_abs:
             self.spectrum_list_abs = self.spectrum_list
 
@@ -307,13 +307,14 @@ class Spectrum:
 
         indices = np.argwhere(s > threshold)
 
-        return [{'ia': i, 'ib': j, 'mza': self.mz[i], 'mzb': other.mz[j],'ppm': 1E6 * np.abs(self.mz[i] - other.mz[j]) / self.mz[i], 'coeff': s[i][j]} for i, j in indices]
+        return [{'ia': i, 'ib': j, 'mza': self.mz[i], 'mzb': other.mz[j],
+                 'ppm': 1E6 * np.abs(self.mz[i] - other.mz[j]) / self.mz[i], 'coeff': s[i][j]} for i, j in indices]
 
     def match_df(self, other, ppm=35, threshold=1E-8):
         from pandas import DataFrame
         return DataFrame(self.match_list(other=other, ppm=ppm, threshold=threshold))
 
-    def true_inner(self,other, ppm: Optional[float] = 35, func=None, vectorize=True):
+    def true_inner(self, other, ppm: Optional[float] = 35, func=None, vectorize=True):
 
         s = self.match_matrix(other=other, ppm=ppm)
 
@@ -381,7 +382,8 @@ class ReconstructedSpectrum(Spectrum):
             self.mis_matched_mz = list()
         if other.matched_mzs:
             self.matched_mz = [tuple(i) for i in other.matched_mzs]
-            self.mis_matched_mz = [(i,j) for i,j in self.spectrum_list_abs if (i,j) not in self.matched_mz and (i,j) not in self.mis_matched_mz]
+            self.mis_matched_mz = [(i, j) for i, j in self.spectrum_list_abs if
+                                   (i, j) not in self.matched_mz and (i, j) not in self.mis_matched_mz]
         else:
             self.mis_matched_mz = self.spectrum_list_abs
 
@@ -396,12 +398,14 @@ class ReconstructedSpectrum(Spectrum):
             mz_13C = [mz + 1.003354, mz + 2 * 1.003354, mz + 3 * 1.003354]  ###13C of matched mz
             for mis_mz, mis_intensity in self.mis_matched_mz:  ##mis_matched_mz
                 for j in range(len(mz_13C)):
-                    if (abs(mis_mz - mz_13C[j]) / mz_13C[j]) * 1E6 <= ppm * 2 and mis_intensity <= intensity*percen_thre[j]:
+                    if (abs(mis_mz - mz_13C[j]) / mz_13C[j]) * 1E6 <= ppm * 2 and mis_intensity <= intensity * \
+                            percen_thre[j]:
                         isotope_mz[(mis_mz, mis_intensity)] = [(mz, intensity)]
                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                    else:continue
+                    else:
+                        continue
 
-                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                    if (mis_mz, mis_intensity) not in self.matched_mz:
                         self.matched_mz.append((mis_mz, mis_intensity))
 
         self.matched_isotope_mz = isotope_mz
@@ -428,12 +432,14 @@ class ReconstructedSpectrum(Spectrum):
                                        'M+ACN+H': (-42.03381188999998, 1),
                                        'M+2Na-H': (-44.97111189, 1),
                                        'M+ACN+Na': (-64.01581188999998, 1),
-                                       '[M+H+Na]2+': (molecular_weight-(molecular_weight+1.0078+22.9897)/2,2),
-                                       '[M+2H]2+': (molecular_weight-(molecular_weight+2*1.0078)/2, 2),
-                                       '[M+2Na]2+': (molecular_weight-(molecular_weight+2*22.9897)/2, 2),
-                                       '[M+3H]3+': (molecular_weight-(molecular_weight+3*1.0078)/3, 3),
-                                       '[M+2H+Na]3+': (molecular_weight-(molecular_weight+2*1.0078+22.9897)/3,3),
-                                       '[M+H+2Na]3+': (molecular_weight-(molecular_weight+1.0078+2*22.9897)/3,3)},
+                                       '[M+H+Na]2+': (molecular_weight - (molecular_weight + 1.0078 + 22.9897) / 2, 2),
+                                       '[M+2H]2+': (molecular_weight - (molecular_weight + 2 * 1.0078) / 2, 2),
+                                       '[M+2Na]2+': (molecular_weight - (molecular_weight + 2 * 22.9897) / 2, 2),
+                                       '[M+3H]3+': (molecular_weight - (molecular_weight + 3 * 1.0078) / 3, 3),
+                                       '[M+2H+Na]3+': (
+                                       molecular_weight - (molecular_weight + 2 * 1.0078 + 22.9897) / 3, 3),
+                                       '[M+H+2Na]3+': (
+                                       molecular_weight - (molecular_weight + 1.0078 + 2 * 22.9897) / 3, 3)},
                           'Negative': {'M-H': (1.0072881100000188, 1),
                                        'M+F': (-18.998411884000006, 1),
                                        'M-H2O-H': (-19.01838811600001, 1),
@@ -442,16 +448,18 @@ class ReconstructedSpectrum(Spectrum):
                                        'M+K-2H': (-36.948611884, 1),
                                        'M+FA-H': (-44.998211884, 1),
                                        'M+CH3COO': (-59.013811884000006, 1),
-                                       '[2M-2H+Na]-': (molecular_weight-(2*molecular_weight-1.0078*2+22.9897),1),
-                                       '[M-2H]2-': (molecular_weight-(molecular_weight-2*1.0078)/2, 2),
-                                       '[M-3H]3-': (molecular_weight-(molecular_weight-3*1.0078)/3, 3)}}
+                                       '[2M-2H+Na]-': (
+                                       molecular_weight - (2 * molecular_weight - 1.0078 * 2 + 22.9897), 1),
+                                       '[M-2H]2-': (molecular_weight - (molecular_weight - 2 * 1.0078) / 2, 2),
+                                       '[M-3H]3-': (molecular_weight - (molecular_weight - 3 * 1.0078) / 3, 3)}}
 
         matched_adduction = dict()
         for mis_mz in self.mis_matched_mz:
             for ad, mz in adduction_list[mode].items():
                 if abs((molecular_weight - mis_mz[0] - mz[0]) / mz[0]) * 1E6 <= ppm * 2:
                     matched_adduction[mis_mz] = (ad, mis_mz[0], mz[1])
-                else:continue
+                else:
+                    continue
                 if mis_mz not in self.matched_mz:
                     self.matched_mz.append(mis_mz)
                 self.mis_matched_mz.remove(mis_mz)
@@ -471,18 +479,21 @@ class ReconstructedSpectrum(Spectrum):
                 for mis_mz, mis_intensity in self.mis_matched_mz:
                     if (abs(mz * 2 + 1.0073118899999827 - mis_mz) / (
                             mz * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
-                        self.matched_multimer[(mis_mz, mis_intensity)] =\
+                        self.matched_multimer[(mis_mz, mis_intensity)] = \
                             ('dimer of frag/precur', (mz, intensity))
                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                    else:continue
-                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                    else:
+                        continue
+                    if (mis_mz, mis_intensity) not in self.matched_mz:
                         self.matched_mz.append((mis_mz, mis_intensity))
 
             for mis_mz, mis_intensity in self.mis_matched_mz:  ##find dimer of precusor#
-                if not (abs(molecular_weight * 2 - 1.0073118899999827 - mis_mz) / (molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
+                if not (abs(molecular_weight * 2 - 1.0073118899999827 - mis_mz) / (
+                        molecular_weight * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
                     continue
-                if (mis_mz, mis_intensity) not in self.matched_multimer.keys() and (mis_mz, mis_intensity) not in self.matched_mz:
-                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',molecular_weight)
+                if (mis_mz, mis_intensity) not in self.matched_multimer.keys() and (
+                mis_mz, mis_intensity) not in self.matched_mz:
+                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule', molecular_weight)
                     self.mis_matched_mz.remove((mis_mz, mis_intensity))
                     self.matched_mz.append((mis_mz, mis_intensity))
 
@@ -492,18 +503,20 @@ class ReconstructedSpectrum(Spectrum):
                     if (abs(mz * 2 - 1.0073118899999827 - mis_mz) / (
                             mz * 2 - 1.0073118899999827)) * 1E6 <= ppm * 2:
                         self.matched_multimer[(mis_mz, mis_intensity)] = (
-                        'dimer of frag/precur', (mz, intensity))
+                            'dimer of frag/precur', (mz, intensity))
                         self.mis_matched_mz.remove((mis_mz, mis_intensity))
-                    else:continue
-                    if (mis_mz,mis_intensity) not in self.matched_mz:
+                    else:
+                        continue
+                    if (mis_mz, mis_intensity) not in self.matched_mz:
                         self.matched_mz.append((mis_mz, mis_intensity))
 
             for mis_mz, mis_intensity in self.mis_matched_mz:  ##find dimer of precusor#
                 if not (abs(molecular_weight * 2 + 1.0073118899999827 - mis_mz) / (
                         molecular_weight * 2 + 1.0073118899999827)) * 1E6 <= ppm * 2:
                     continue
-                if (mis_mz, mis_intensity) not in self.matched_multimer.keys() and (mis_mz, mis_intensity) not in self.matched_mz:
-                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule',molecular_weight)
+                if (mis_mz, mis_intensity) not in self.matched_multimer.keys() and (
+                mis_mz, mis_intensity) not in self.matched_mz:
+                    self.matched_multimer[(mis_mz, mis_intensity)] = ('dimer of molecule', molecular_weight)
                     self.mis_matched_mz.remove((mis_mz, mis_intensity))
                     self.matched_mz.append((mis_mz, mis_intensity))
 
@@ -519,17 +532,18 @@ class ReconstructedSpectrum(Spectrum):
                 max_val = new[0][1]
                 for i in range(len(mis_matched_rela)):
                     mis_matched_rela[i][1] = (mis_matched_rela[i][1]) / max_val
-            self.sub_recon_spec = ReconstructedSpectrum(spectrum_list=mis_matched_rela,spectrum_list_abs=self.mis_matched_mz)
+            self.sub_recon_spec = ReconstructedSpectrum(spectrum_list=mis_matched_rela,
+                                                        spectrum_list_abs=self.mis_matched_mz)
 
         return self.sub_recon_spec
 
-    def gen_matched_peaks_compound(self,inchIkey: str, database, mode: Union['Negative','Positive'], reset=True):
+    def gen_matched_peaks_compound(self, inchIkey: str, database, mode: Union['Negative', 'Positive'], reset=True):
         if reset:
             self.matched_mz = None
             self.mis_matched_mz = None
-        res=[]
+        res = []
         mw = None
-        cor_candi=[]
+        cor_candi = []
         if database.name == 'iroa' or database.name == 'mona':
             for can in database.compounds_list:
                 if can.InChIKey == inchIkey:
@@ -538,14 +552,14 @@ class ReconstructedSpectrum(Spectrum):
                 for s in candi.spectra_1 + candi.spectra_2:
                     if not s.mode == mode:
                         continue
-                    cos, matched_mzs = self.cos(other=s,func=None)
+                    cos, matched_mzs = self.cos(other=s, func=None)
                     s.matched_mzs = matched_mzs
                     if cos > 1E-4:
-                        res.append((cor_candi[0],s, cos))
+                        res.append((cor_candi[0], s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
             if res and database.name == 'iroa':
                 mw = res[0][0].MolecularWeight
-            elif res and database.name == 'mona' :
+            elif res and database.name == 'mona':
                 mw = res[0][0].total_exact_mass
 
         elif database.name == 'mzc':
@@ -557,23 +571,23 @@ class ReconstructedSpectrum(Spectrum):
                     for s in t:
                         if not s.Polarity == mode:
                             continue
-                        cos, matched_mzs = self.cos(other=s,func=None)
+                        cos, matched_mzs = self.cos(other=s, func=None)
                         s.matched_mzs = matched_mzs
                         if cos > 1E-4:
-                            res.append((cor_candi[0],s, cos))
+                            res.append((cor_candi[0], s, cos))
             res.sort(key=lambda x: x[2], reverse=True)
             if res:
                 mw = res[0][0].MolecularWeight
 
         if res:
             target_spec = res[0][1]
-            self.gen_matched_mz(target_spec,reset_matched_mz=True)
+            self.gen_matched_mz(target_spec, reset_matched_mz=True)
             self.check_isotope()
-            self.check_adduction_list(mode=mode,molecular_weight=mw)
-            self.check_multimer(mode=mode,molecular_weight=mw)
-            return self.matched_mz, self.mis_matched_mz,self.matched_isotope_mz,self.matched_adduction,self.matched_multimer
+            self.check_adduction_list(mode=mode, molecular_weight=mw)
+            self.check_multimer(mode=mode, molecular_weight=mw)
+            return self.matched_mz, self.mis_matched_mz, self.matched_isotope_mz, self.matched_adduction, self.matched_multimer
         else:
-            return ['res_empty'],['res_empty'],['empty'],['empty'],['empty']
+            return ['res_empty'], ['res_empty'], ['empty'], ['empty'], ['empty']
 
 
 @dataclass
@@ -1032,7 +1046,6 @@ class MSData:
             rts = self.rts_raw
             ints = self._ints_raw
 
-
         if rt_range is None:  # all range
             rt_idx = np.arange(rts.shape[0])
         else:
@@ -1040,7 +1053,6 @@ class MSData:
 
         rts = np.copy(rts[rt_idx])
         ints = np.copy(ints[abs_index, :][:, rt_idx])
-
 
         if plot:
             with self.plt_context(dpi=dpi, figsize=figsize):
@@ -1205,13 +1217,13 @@ class MSData:
             unique_detection_result = dict()
             unique_abs_index = list()
             for rela_index, re in self._detection_results_raw.items():
-                mz_min, mz_max = np.round(re.mz_range[0],decimals=3), np.round(re.mz_range[1],decimals=3)
+                mz_min, mz_max = np.round(re.mz_range[0], decimals=3), np.round(re.mz_range[1], decimals=3)
                 if re.matching_abs_peak is not None:
                     matching_abs_peak = np.round(re.matching_abs_peak)
-                    if not duplicates.get((mz_min, mz_max,matching_abs_peak)):
-                        duplicates[(mz_min, mz_max, matching_abs_peak)] = [(rela_index,re.absolute_index)]
+                    if not duplicates.get((mz_min, mz_max, matching_abs_peak)):
+                        duplicates[(mz_min, mz_max, matching_abs_peak)] = [(rela_index, re.absolute_index)]
                     else:
-                        duplicates[(mz_min, mz_max,matching_abs_peak)].append((rela_index,re.absolute_index))
+                        duplicates[(mz_min, mz_max, matching_abs_peak)].append((rela_index, re.absolute_index))
             i = 0
             for mzrange, rela_index in duplicates.items():
                 unique_detection_result[i] = self._detection_results_raw[rela_index[0][0]]
@@ -1720,7 +1732,7 @@ class MSData:
                        xlim: Optional[Union[str, Tuple[Numeric, Numeric]]] = 'auto',
                        xlim_delta_rt: float = 20.,
                        save: bool = True, load: bool = True,
-                       mz_upperbound: float = np.inf, ##could set mz_upperbound to infinite
+                       mz_upperbound: float = np.inf,  ##could set mz_upperbound to infinite
                        rescale: bool = True
                        ) -> None:
         """
@@ -1754,9 +1766,9 @@ class MSData:
                     min(self.rts[-1], base_range[1] + xlim_delta_rt))
 
         coefficient, _ = self.spectrum_coefficient(base_index=base_index, threshold=threshold,
-                                                                 max_mse=max_mse, max_rt_diff=max_rt_diff,
-                                                                 min_cos=min_cos,
-                                                                 save=save, load=load)
+                                                   max_mse=max_mse, max_rt_diff=max_rt_diff,
+                                                   min_cos=min_cos,
+                                                   save=save, load=load)
 
         arg_max = np.argmax(coefficient)
         arg_max_mz = self.mzs[arg_max, :].mean()
