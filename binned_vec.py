@@ -4,26 +4,23 @@ import numpy as np
 
 class BinnedSparseVector:
 
-    def __init__(self, ppm: float = 60.,) -> None:
+    def __init__(self, ppm: float = 60., ) -> None:
 
         if ppm >= 1E6:
             raise ValueError("ppm cannot be greater than 1E6, and is recommended to be less than 1E3. ")
 
         self.ppm: float = ppm
         self.log_base: float = np.log(1 + ppm * 1E-6)
-        self.dict: dict = dict() #key:idx,value: sum of relative_intensity of m/z that corresponds to the same idx##
+        self.dict: dict = dict()  # key:idx,value: sum of relative_intensity of m/z that corresponds to the same idx##
         self._norm: Optional[float] = None
-        self.mz_idx_dic: dict = dict()  #key: m/z, value: tuple(idx,abs_intensity)
+        self.mz_idx_dic: dict = dict()  # key: m/z, value: tuple(idx,abs_intensity)
         self.matched_idx_mz: Optional[dict] = dict()
-        # self.matched_idx_mz['matched_idx'] = index that matched in target spectrum
-        # self.matched_idx_mz['matched_mz'] = index that matched in database's spectrum
-        # self.mis_matched_mz: Optional[List(Sequence(tuple))] = list()
 
     def add(self, x: np.ndarray, y: np.ndarray, y_abs: Optional[np.ndarray] = None) -> None:
-        #x:self.mz y:self.relative_intensity
+        # x:self.mz y:self.relative_intensity
 
         n = x.shape[0]
-        assert x.shape == (n, ) and y.shape == (n, )
+        assert x.shape == (n,) and y.shape == (n,)
         assert np.all(x > 0.)
 
         index = np.floor(np.log(x) / self.log_base).astype(int)
@@ -36,7 +33,6 @@ class BinnedSparseVector:
 
         # reset self._norm
         self._norm = None
-
 
     def __repr__(self):
         return self.dict.__repr__()
@@ -51,7 +47,8 @@ class BinnedSparseVector:
 
         return self._norm
 
-    def inner(self, other: "BinnedSparseVector", transform: Optional[Callable[[float], float]] = None, save_matched_mz=True):
+    def inner(self, other: "BinnedSparseVector", transform: Optional[Callable[[float], float]] = None,
+              save_matched_mz=True):
         matched_idx = set()
         if self.ppm != other.ppm:
             raise ValueError("cannot compute inner product of two BinnedSparseVector of different ppm.")
@@ -64,7 +61,7 @@ class BinnedSparseVector:
                 # if i in other.dict:  # do not directly access other.dict[i]!
                 #     inner_product += v * other.dict[i]
 
-                for j in (i, i-1, i+1):
+                for j in (i, i - 1, i + 1):
                     if j in other.dict:  # do not directly access other.dict[i]!
                         inner_product += v * other.dict[j]
                         matched_idx.add(j)
@@ -75,7 +72,7 @@ class BinnedSparseVector:
                 # if i in other.dict:  # do not directly access other.dict[i]!
                 #     inner_product += v * other.dict[i]
 
-                for j in (i, i-1, i+1):
+                for j in (i, i - 1, i + 1):
                     if j in other.dict:  # do not directly access other.dict[i]!
                         inner_product += transform(v) * transform(other.dict[j])
                         matched_idx.add(j)
@@ -84,9 +81,8 @@ class BinnedSparseVector:
             matched_mz_result = list()
             for k in matched_idx:
                 for i, j in self.mz_idx_dic.items():
-                    if j[0] in (k-1, k, k+1):
+                    if j[0] in (k - 1, k, k + 1):
                         matched_mz_result.append((i, j))
-
 
             self.matched_idx_mz['matched_idx'] = matched_idx
             self.matched_idx_mz['matched_mz'] = matched_mz_result
@@ -109,4 +105,5 @@ class BinnedSparseVector:
             other_norm = np.linalg.norm(np.array([transform(v) for v in other.dict.values()]), 2)
 
             if self_norm > 0. and other_norm > 0:
-                return self.inner(other=other, transform=transform, save_matched_mz=save_matched_mz) / self_norm / other_norm
+                return self.inner(other=other, transform=transform,
+                                  save_matched_mz=save_matched_mz) / self_norm / other_norm
