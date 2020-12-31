@@ -11,7 +11,7 @@ mona.read_file(cur_mode='Negative')  #cur_mode: 'Negative' or 'Positive'
 for c in tqdm(mona.compounds_list, desc="processing compounds"):
     c.generate_mz_collection(mode='Negative') #mode: 'Negative' or 'Positive'
 
-###################################read file############################
+####################################read file####################################
 m = MSData.from_files('data','/.../.../data')
 # MSData.from_files(1st argument: data name, 2nd argument:directory_to_store_data), data name for the two arguments should be consistent#
 # required data files including :
@@ -27,7 +27,7 @@ m.remove_duplicates_detection() #remove duplicates
 by = np.max(m.ints_raw, axis=1)
 m.sort_feature(by=by) #sort features by intensity order(high to low)
 
-###########generate basis ########
+####################################generate basis step####################################
 gen_base_opt = dict(
     l1=2.,
     min_sin=5E-3,  # min_sin=5E-2,
@@ -39,8 +39,8 @@ m.generate_base(reset=True, allowed_n_overlap=(1,2), **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=2, **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=3, **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=(4, None), **gen_base_opt)
-#############################
 
+####################################perform peak decompositon for other features####################################
 m.perform_peak_decomposition(l1=1.) #decompose other features using generated basis group
 spec_params = dict(
     threshold=1E-5,
@@ -51,7 +51,7 @@ spec_params = dict(
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params) #generate reconstructed spectrum for each group
 
-####database matching for each basis group###
+####################################database matching for each basis group####################################
 final_matching_results = []  #create an empty list to contain the following matching result
 import datetime
 start = datetime.datetime.now()
@@ -74,7 +74,7 @@ for i in range(len(m.base_index)):
 end = datetime.datetime.now()
 print(end - start)
 
-#####check the matching result###
+####################################check the matching results####################################
 final_matching_results[0].sum_matched_results_mona # A dictionary that contains matching result for basis group 0
 len(final_matching_results[0].sum_matched_results_mona) # if total_layer_matchin=1, n_candidates_further_matched=3, then there are 3^2 paths
 final_matching_results[0].sum_matched_results_mona[0] # A dictionary for first path matching result of basis group 0
