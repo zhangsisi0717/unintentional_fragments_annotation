@@ -11,8 +11,7 @@ from tqdm.auto import tqdm
 import math
 from msdata import *
 from binned_vec import *
-# from mzcloud import *
-# from IROA_IDX import *
+
 
 class MZCollection:
     """
@@ -124,30 +123,31 @@ class MZCollection:
         self.min: List[float] = [self.min[i] for i in idx]
         self.max: List[float] = [self.max[i] for i in idx]
 
+
 @dataclass
 class MonaSpectrum(Spectrum):
-    Polarity: Union[str] = field(default=None,repr=False)
-    name: Union[int, str, None] = field(default=None,repr=True)
-    spectrum_id: Optional[str] = field(default=None,repr=True)
-    InChI: Optional[str] = field(default=None,repr=False)
-    InChIKey: Optional[str] = field(default=None,repr=False)
-    total_exact_mass: Optional[float] = field(default=None,repr=False)
-    molecular_formula: Optional[str] = field(default=None,repr=False)
-    ms_level: Optional[str] = field(default=None,repr=True)
-    collision_energy: Optional[str] = field(default=None,repr=False)
-    precursor: Optional[float] = field(default=None,repr=False)
-    precursor_type: Optional[str] = field(default=None,repr=False)
-    matched_mzs: Optional[List[Tuple]] = field(default=None,repr=False)
+    Polarity: Union[str] = field(default=None, repr=False)
+    name: Union[int, str, None] = field(default=None, repr=True)
+    spectrum_id: Optional[str] = field(default=None, repr=True)
+    InChI: Optional[str] = field(default=None, repr=False)
+    InChIKey: Optional[str] = field(default=None, repr=False)
+    total_exact_mass: Optional[float] = field(default=None, repr=False)
+    molecular_formula: Optional[str] = field(default=None, repr=False)
+    ms_level: Optional[str] = field(default=None, repr=True)
+    collision_energy: Optional[str] = field(default=None, repr=False)
+    precursor: Optional[float] = field(default=None, repr=False)
+    precursor_type: Optional[str] = field(default=None, repr=False)
+    matched_mzs: Optional[List[Tuple]] = field(default=None, repr=False)
 
 
 @dataclass
 class MonaCompounds:
-    id: Union[int, str, None] = field(default=None,repr=True)
-    name: Union[int, str, None] = field(default=None,repr=True)
-    InChI: Optional[str] = field(default=None,repr=False)
-    InChIKey: Optional[str] = field(default=None,repr=False)
-    total_exact_mass: Optional[float] = field(default=None,repr=False)
-    molecular_formula: Optional[str] = field(default=None,repr=False)
+    id: Union[int, str, None] = field(default=None, repr=True)
+    name: Union[int, str, None] = field(default=None, repr=True)
+    InChI: Optional[str] = field(default=None, repr=False)
+    InChIKey: Optional[str] = field(default=None, repr=False)
+    total_exact_mass: Optional[float] = field(default=None, repr=False)
+    molecular_formula: Optional[str] = field(default=None, repr=False)
     spectra_1: List[MonaSpectrum] = field(default_factory=list, repr=False)
     spectra_2: List[MonaSpectrum] = field(default_factory=list, repr=False)
     mzs_1: Optional[MZCollection] = field(default=None, repr=False, init=False)
@@ -213,7 +213,7 @@ class MonaDatabase:
     neg_dir: Optional[str] = field(default=None, repr=False)
     pos_dir: Optional[str] = field(default=None, repr=False)
     compounds_list: Optional[List[MonaCompounds]] = field(default_factory=list, repr=False)
-    compounds_dic: Optional[Dict] = field(default_factory=dict, repr=False) ##key:compounds_name value:List[Spectrum]
+    compounds_dic: Optional[Dict] = field(default_factory=dict, repr=False)
     n_compounds: Optional[int] = field(default=None, repr=True)
     positive_spectra: Optional[List[MonaSpectrum]] = field(default_factory=list, repr=False)
     negative_spectra: Optional[List[MonaSpectrum]] = field(default_factory=list, repr=False)
@@ -231,10 +231,10 @@ class MonaDatabase:
                     else:
                         self.compounds_dic[neg_spec.name].append(neg_spec)
                 i = 0
-                for cmp_name,comp in tqdm(self.compounds_dic.items(), desc='Creating compound list'):
-                    self.compounds_list.append(MonaCompounds(id=i, name=cmp_name, spectra_2=comp,\
-                                                             InChI = comp[0].InChI, InChIKey=comp[0].InChIKey,\
-                                                             total_exact_mass=comp[0].total_exact_mass,\
+                for cmp_name, comp in tqdm(self.compounds_dic.items(), desc='Creating compound list'):
+                    self.compounds_list.append(MonaCompounds(id=i, name=cmp_name, spectra_2=comp, \
+                                                             InChI=comp[0].InChI, InChIKey=comp[0].InChIKey, \
+                                                             total_exact_mass=comp[0].total_exact_mass, \
                                                              molecular_formula=comp[0].molecular_formula))
                     i += 1
             else:
@@ -245,18 +245,19 @@ class MonaDatabase:
                 with open(self.pos_dir, 'rb') as f:
                     db = pkl.load(f)
                 for key, value in tqdm(db.items(), desc='Reading MoNA positive spectra'):
-                    pos_spec = MonaSpectrum(**value,mode='Positive')
+                    pos_spec = MonaSpectrum(**value, mode='Positive')
                     self.positive_spectra.append(pos_spec)
                     if pos_spec.name not in self.compounds_dic:
                         self.compounds_dic[pos_spec.name] = [pos_spec]
-                    else: self.compounds_dic[pos_spec.name].append(pos_spec)
-                i=0
-                for cmp_name,comp in tqdm(self.compounds_dic.items(), desc='Creating compound list'):
-                    self.compounds_list.append(MonaCompounds(id=i, name=cmp_name,spectra_2=comp, \
+                    else:
+                        self.compounds_dic[pos_spec.name].append(pos_spec)
+                i = 0
+                for cmp_name, comp in tqdm(self.compounds_dic.items(), desc='Creating compound list'):
+                    self.compounds_list.append(MonaCompounds(id=i, name=cmp_name, spectra_2=comp, \
                                                              InChI=comp[0].InChI, InChIKey=comp[0].InChIKey, \
                                                              total_exact_mass=comp[0].total_exact_mass, \
                                                              molecular_formula=comp[0].molecular_formula))
-                    i+=1
+                    i += 1
 
             else:
                 raise ValueError('must input the directory of MoNA_pos_spectra.pkl file!')
@@ -275,7 +276,7 @@ class MonaDatabase:
         else:
             raise ValueError('spectrum mode is not positive!')
 
-    def add_negative_spectra(self,spectrum:MonaSpectrum)->List[MonaSpectrum]:
+    def add_negative_spectra(self, spectrum: MonaSpectrum) -> List[MonaSpectrum]:
         if spectrum.mode == 'Negative':
             self.negative_spectra.append(spectrum)
         else:
@@ -295,10 +296,8 @@ class MonaDatabase:
                    cos_threshold: float = 1E-4,
                    transform: Optional[Callable[[float], float]] = None, save_matched_mz: bool = True,
                    reset_matched_mzs: bool = True,
-                   precur_mass_diff_threshold: Optional[Numeric] = np.inf) -> List[Tuple[MonaCompounds, MonaSpectrum, float]]:
-
-        # if mode not in ('Negative', 'Positive'):
-        #     raise ValueError("mode can only be 'Negative' or 'Positive'.")
+                   precur_mass_diff_threshold: Optional[Numeric] = np.inf) -> List[
+        Tuple[MonaCompounds, MonaSpectrum, float]]:
 
         candidates: List[MonaCompounds] = []
 
@@ -314,12 +313,9 @@ class MonaDatabase:
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
             for s in c.spectra_1 + c.spectra_2:
                 if_choose_s = False
-                # cos = s.bin_vec.cos(other=target.bin_vec, transform=transform,
-                #                     save_matched_mz=save_matched_mz,
-                #                     reset_matched_idx_mz=reset_matched_idx_mz)
                 if s.precursor:
                     for mz in target.mz:
-                        if (abs(s.precursor-mz)/s.precursor) * 1E6 <= precur_mass_diff_threshold:
+                        if (abs(s.precursor - mz) / s.precursor) * 1E6 <= precur_mass_diff_threshold:
                             if_choose_s = True
                 if not s.precursor:
                     if_choose_s = True
@@ -328,8 +324,7 @@ class MonaDatabase:
                     s.matched_mzs = None
 
                 if if_choose_s:
-                    cos, matched_mzs = target.cos(other=s,func=transform)
-                #matched_mzs: all the matched (mzs,abs_ints) in target
+                    cos, matched_mzs = target.cos(other=s, func=transform)
                     if cos > cos_threshold:
                         res.append((c, s, cos))
                         if save_matched_mz:
@@ -344,12 +339,3 @@ class MonaDatabase:
                 cmp_list.append((c, s, cos))
 
         return cmp_list
-
-
-
-
-
-
-
-
-

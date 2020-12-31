@@ -5,7 +5,7 @@ import copy
 
 ####################################read_database##########################
 mona_dire_neg = '../../../MoNA/mona_neg_cleaned.pkl'  # directory to store pickle file of MoNA database (negative mode)
-mona_dire_pos = '../../../MoNA/mona_pos_cleaned_new.pkl'  # directory to store pickle file of MoNA database (positive mode)
+mona_dire_pos = '../../../MoNA/mona_pos_cleaned.pkl'  # directory to store pickle file of MoNA database (positive mode)
 mona = MonaDatabase(neg_dir=mona_dire_neg, pos_dir=mona_dire_pos)
 mona.read_file(cur_mode='Negative')  # cur_mode: 'Negative' or 'Positive'
 for c in tqdm(mona.compounds_list, desc="processing compounds"):
