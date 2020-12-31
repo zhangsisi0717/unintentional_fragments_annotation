@@ -11,8 +11,118 @@ from tqdm.auto import tqdm
 import math
 from msdata import *
 from binned_vec import *
-from mzcloud import *
-from IROA_IDX import *
+# from mzcloud import *
+# from IROA_IDX import *
+
+class MZCollection:
+    """
+    A collection of mz values, used for fast spectrum matching. When matching, each mz will be considered a match
+    if it is within a tolerance of one mz value stored in the class. This tolerance is characterized by a ppm value,
+    i.e., for a mz value p, if there exists a mz value q in MZCollection such that
+
+        1./ (1 + ppm * 1E-6) q <= p <= (1 + ppm * 1E-6) q
+
+    then we think of p as equal to q and belongs to this collection.
+    """
+
+    @staticmethod
+    def union(mzc1: "MZCollection", mzc2: "MZCollection") -> "MZCollection":
+        ppm = min(mzc1.ppm, mzc2.ppm)
+        mzc_union: "MZCollection" = MZCollection(ppm=ppm)
+        for mz in mzc1.center:
+            mzc_union.add(mz)
+
+        for mz in mzc2.center:
+            mzc_union.add(mz)
+
+        return mzc_union
+
+    def __init__(self, ppm: float = 30.) -> None:
+        self.ppm: float = ppm
+        self.lc: float = 1. / (1. + self.ppm * 1E-6)
+        self.uc: float = 1. + self.ppm * 1E-6
+
+        self.lb: List[float] = []
+        self.ub: List[float] = []
+        self.center: List[float] = []
+        self.min: List[float] = []
+        self.max: List[float] = []
+
+        self.n = 0
+
+    def __repr__(self) -> str:
+        return "MZCollection(n_mz={})".format(self.n)
+
+    def add(self, mz: float) -> None:
+
+        for i in range(self.n):
+            if self.lb[i] <= mz <= self.ub[i]:  # identified to belong to a group
+                change_flag: bool = True
+                if mz < self.min[i]:
+                    self.min[i] = mz
+                elif mz > self.max[i]:
+                    self.max[i] = mz
+                else:
+                    change_flag = False
+
+                if change_flag:  # need to recompute center, lb, ub
+                    self.center[i] = math.sqrt(self.min[i] * self.max[i])
+                    self.lb[i], self.ub[i] = self.center[i] * self.lc, self.center[i] * self.uc
+
+                # once identified, break
+                break
+        # if loop finishes without breaking
+        else:  # create new group
+            self.lb.append(mz * self.lc)
+            self.ub.append(mz * self.uc)
+            self.center.append(mz)
+            self.min.append(mz)
+            self.max.append(mz)
+
+            self.n += 1
+
+    def __contains__(self, item: Float) -> bool:
+        for lower, upper in zip(self.lb, self.ub):
+            if lower <= item <= upper:
+                return True
+        else:
+            return False
+
+    def filter(self, leave: Union[Iterable[bool]], inplace: bool = False) -> Optional["MZCollection"]:
+
+        leave = [bool(i) for i in leave]
+        if len(leave) != self.n:
+            raise ValueError("expect leave of length {}, got {} instead.".format(self.n, len(leave)))
+
+        if inplace:
+            self.center = [v for v, i in zip(self.center, leave) if i]
+            self.lb = [v for v, i in zip(self.lb, leave) if i]
+            self.ub = [v for v, i in zip(self.ub, leave) if i]
+            self.min = [v for v, i in zip(self.min, leave) if i]
+            self.max = [v for v, i in zip(self.max, leave) if i]
+
+            self.n = len(self.center)
+        else:
+            res = MZCollection(ppm=self.ppm)
+            res.center = [v for v, i in zip(self.center, leave) if i]
+            res.lb = [v for v, i in zip(self.lb, leave) if i]
+            res.ub = [v for v, i in zip(self.ub, leave) if i]
+            res.min = [v for v, i in zip(self.min, leave) if i]
+            res.max = [v for v, i in zip(self.max, leave) if i]
+
+            res.n = len(res.center)
+
+            return res
+
+    def sort(self, reverse=False) -> None:
+
+        idx = [i for i, c in sorted(enumerate(self.center), key=lambda x: x[1], reverse=reverse)]
+
+        self.center: List[float] = [self.center[i] for i in idx]
+        self.lb: List[float] = [self.lb[i] for i in idx]
+        self.ub: List[float] = [self.ub[i] for i in idx]
+        self.min: List[float] = [self.min[i] for i in idx]
+        self.max: List[float] = [self.max[i] for i in idx]
 
 @dataclass
 class MonaSpectrum(Spectrum):
@@ -28,11 +138,7 @@ class MonaSpectrum(Spectrum):
     precursor: Optional[float] = field(default=None,repr=False)
     precursor_type: Optional[str] = field(default=None,repr=False)
     matched_mzs: Optional[List[Tuple]] = field(default=None,repr=False)
-    # def __post_init__(self):
-    #     super().__post_init__()
 
-#dict_keys(['spectrum_id', 'name', 'spectrum_list', 'InChI', 'InChIKey', 'molecular_formula', 'total_exact_mass',
-#\'ms_level', 'collision_energy', 'precursor', 'precursor_type'])
 
 @dataclass
 class MonaCompounds:
@@ -50,10 +156,10 @@ class MonaCompounds:
     mzs_union: Optional[MZCollection] = field(default=None, repr=False, init=False)
     mz: Optional[float] = field(default=None, repr=False, init=False)
 
-    def add_spectra_1(self, spectra_1: MonaSpectrum)->List[MonaSpectrum]:
+    def add_spectra_1(self, spectra_1: MonaSpectrum) -> List[MonaSpectrum]:
         self.spectra_1.append(spectra_1)
 
-    def add_spectra_2(self, spectra_2: MonaSpectrum)->List[MonaSpectrum]:
+    def add_spectra_2(self, spectra_2: MonaSpectrum) -> List[MonaSpectrum]:
         self.spectra_2.append(spectra_2)
 
     def generate_mz_collection(self, mode: str = 'Negative', ppm: float = 30.,
@@ -183,7 +289,7 @@ class MonaDatabase:
     def n_neg_spectra(self):
         return len(self.negative_spectra)
 
-    def find_match(self, target: Union[ReconstructedSpectrum, IROASpectrum, MZCloudSpectrum, MonaSpectrum],
+    def find_match(self, target: Union[ReconstructedSpectrum, MonaSpectrum],
                    rela_threshold: float = 1E-2,
                    # mode: str = 'Negative',
                    cos_threshold: float = 1E-4,
@@ -199,13 +305,11 @@ class MonaDatabase:
         if self.compounds_list is None:
             raise ValueError("Run read_file() first.")
 
-
         for c in tqdm(self.compounds_list, desc="finding candidates compounds", leave=True):
             for mz, intensity in zip(target.mz, target.relative_intensity):
                 if intensity > rela_threshold and mz in c.mzs_union:
                     candidates.append(c)
                     break
-
         res = []
         for c in tqdm(candidates, desc="looping through candidates", leave=True):
             for s in c.spectra_1 + c.spectra_2:
