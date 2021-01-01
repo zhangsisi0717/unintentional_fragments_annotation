@@ -37,8 +37,8 @@ for i in tqdm(range(len(mona_raw))):
         continue
 
     '''
-    Further filter the spectra data by excluding spectra containing more than certain number of peaks.
-    Raw data without further this filtering step would take a very long time in database matching step
+    Further filtering the spectra data by excluding spectra containing more than certain number of peaks is important.
+    Without this filtering step, it would take a very long time in further database matching step.
     
     '''
 
