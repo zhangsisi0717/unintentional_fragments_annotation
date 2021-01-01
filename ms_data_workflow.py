@@ -1,4 +1,4 @@
-from mona.py import *
+from mona import *
 from spec_matching_result import *
 from msdata import *
 import copy
