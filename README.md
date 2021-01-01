@@ -131,8 +131,8 @@ m.sort_feature(by=by)  # sort features by intensity order(high to low)
 ####################################generate basis step####################################
 gen_base_opt = dict(
     l1=2.,
-    min_sin=5E-3,  # min_sin=5E-2,
-    min_base_err=5E-4,  # min_base_err=5E-2,
+    min_sin=5E-3,  
+    min_base_err=5E-4, 
     min_rt_diff=1.,
     max_cos_sim=0.7
 )
