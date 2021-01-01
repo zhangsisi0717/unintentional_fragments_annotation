@@ -8,8 +8,7 @@ This algorithm firstly uses non-negative LASSO regression model to generate a ba
 Based on coefficients of decomposition results, one feature could be assigned to one or multiple groups. After assigning all the features, each unique group could be regarded as a reconstructed spectrum which could be compared against spectra in databases for best match.
 In our algorithm, we compare cosine similarity between two spectra by defining inner product as integral of multiplication of two Gaussian distributions, 
 which could successfully annotate thousands of features including fragments, common adducts, isotopes and dimers in MS1 dataset with the help
-of MassBank of North America (MoNA).
-
+of MassBank of North America (MoNA) database.
 ## Package dependency
 ###
 python packages:
