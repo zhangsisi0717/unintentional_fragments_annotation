@@ -15,6 +15,7 @@ python packages:
 ```python
 import numpy as np
 import pandas as pd
+import cvxopt
 import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy import signal
