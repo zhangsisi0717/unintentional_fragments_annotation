@@ -2,6 +2,7 @@ from mona import *
 from spec_matching_result import *
 from msdata import *
 import copy
+import datetime
 
 ####################################read_database##########################
 mona_dire_neg = '../../../MoNA/mona_neg_cleaned.pkl'  # directory to store pickle file of MoNA database (negative mode)
@@ -33,7 +34,7 @@ gen_base_opt = dict(
     min_sin=5E-3,  # min_sin=5E-2,
     min_base_err=5E-4,  # min_base_err=5E-2,
     min_rt_diff=1.,
-    max_cos_sim=0.9
+    max_cos_sim=0.7
 )
 m.generate_base(reset=True, allowed_n_overlap=(1, 2), **gen_base_opt)
 m.generate_base(reset=False, allowed_n_overlap=2, **gen_base_opt)
@@ -45,16 +46,14 @@ m.perform_peak_decomposition(l1=1.)  # decompose other features using generated 
 spec_params = dict(
     threshold=1E-5,
     max_rt_diff=4.,
-    max_mse=5E-2,
-    mz_upperbound=np.inf,
-    min_cos=0.85)
+    max_mse=np.inf,
+    mz_upperbound=5E-2,
+    min_cos=0.90)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)  # generate reconstructed spectrum for each group
 
 ####################################database matching for each basis group####################################
 final_matching_results = []  # create an empty list to contain the following matching result
-import datetime
-
 start = datetime.datetime.now()
 for i in range(len(m.base_index)):
     print(f'current running basis {i}')
@@ -65,7 +64,7 @@ for i in range(len(m.base_index)):
                                  mode='Negative')
     # mode: 'Negative' or 'Positive'
 
-    result.gen_mona_matching_result(total_layer_matching=1, n_candidates_further_matched=3, database=mona,
+    result.gen_mona_matching_result(total_layer_matching=0, n_candidates_further_matched=3, database=mona,
                                     transform=None)
     # total_layer_matching: number of layers for recursive matching(any positive integer), 0 :no recursive mathing, 1: one further recursive mathching(recommended)
     # n_candidates_further_matched: number of top-candidates considered for further recursive matching

@@ -1,6 +1,4 @@
 library('xcms')
-library('plyr')
-library('ggplot2')
 
 data_name <- "data_name"  # name of the data
 rt_range <- c(0, 1500)   # range for retention time
