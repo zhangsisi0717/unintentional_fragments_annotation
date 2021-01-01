@@ -7,8 +7,9 @@ As a result, signals from unique features are often confounded with unintentiona
 This algorithm is based on non-negative LASSO regression model to assign features into one or multiple groups and then compare cosine similarity between two spectra by defining inner product as integral of multiplication of two Gaussian distributions, 
 which could successfully annotate thousands of features including fragments, common adducts, isotopes and dimers in MS1 dataset with the help
 of MassBank of North America (MoNA).
-##Package dependency
-####
+
+## Package dependency
+###
 python packages:
 ```python
 import numpy as np
@@ -32,7 +33,7 @@ library('xcms')
 ```
 
 ## Usage
-###step 1: data preparation
+### step 1: data preparation
 ####
 - Download experimental LC-MS/MS dataset (both positive and negative modes) at https://mona.fiehnlab.ucdavis.edu/downloads
 - Process the .json files using MoNA_data_filter.py file to only extract the needed spectra information
@@ -40,12 +41,12 @@ library('xcms')
 - In order to detect all the peaks and extract them from .mzML files, run 'generate_features.R' file. 
 This step would output three .txt files (data_ints.txt, data_mzs.txt and data_rts.txt) and one peak_info.csv file. 
 
-###step 2: features matching agaist database
+### step 2: features matching agaist database
 ####
 Run 'ms_data_workflow.py' to generate matching results of the MS1 dataset. Details for each step of our algorithm could be found in the
 notes of 'ms_data_workflow.py'.
 
-##Output
+## Output
 The output result will be a list of 'GroupMatchingResult' objects, the length of the list equals to number of different basis groups the algorithm returned.
 
 To check all matched peaks for path 0 of group 3:
@@ -99,7 +100,7 @@ final_matching_results[0].sum_matched_results_mona[0]['candi_list_each_matching_
   0.9395831669260067),...]
 
 ```
-##Demo
+## Demo
 ####
 demo data could be found under /demo_data
 
