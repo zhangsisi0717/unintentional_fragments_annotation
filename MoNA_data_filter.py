@@ -2,10 +2,10 @@ import json
 from tqdm.auto import tqdm
 import pickle as pkl
 
-'''
+"""
 User could download MoNA database (experimental LC-MSMS data) at https://mona.fiehnlab.ucdavis.edu/downloads
 
-'''
+"""
 
 with open('MoNA-export-LC-MS-MS_Negative_Mode.json') as f:  # open the json file for either positive or negative mode
     mona_raw = json.load(f)
@@ -36,11 +36,11 @@ for i in tqdm(range(len(mona_raw))):
     if len(spectrum_list) >= 100:  # could be any number of peaks
         continue
 
-    '''
+    """
     Further filtering the spectra data by excluding spectra containing more than certain number of peaks is important.
     Without this filtering step, it would take a very long time in further database matching step.
     
-    '''
+    """
 
     temp += [('spectrum_id', spec_id), ('spectrum_list', spectrum_list), ('inchi', inchi), ('inchiKey', inchiKey)]
 
