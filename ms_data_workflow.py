@@ -46,8 +46,8 @@ m.perform_peak_decomposition(l1=1.)  # decompose other features using generated 
 spec_params = dict(
     threshold=1E-5,
     max_rt_diff=4.,
-    max_mse=np.inf,
-    mz_upperbound=5E-2,
+    max_mse=5E-2,
+    mz_upperbound=np.inf,
     min_cos=0.90)
 for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)  # generate reconstructed spectrum for each group
