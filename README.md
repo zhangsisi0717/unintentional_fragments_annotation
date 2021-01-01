@@ -153,7 +153,7 @@ for i in tqdm(range(m.n_base), desc='generating spectrum'):
     m.gen_spectrum(i, plot=False, load=False, **spec_params)  # generate reconstructed spectrum for each group
 
 ####################################database matching for each basis group####################################
-final_matching_results = []  # create an empty list to contain the following matching result
+final_matching_results = []  # create an empty list to hold the following matching result
 start = datetime.datetime.now()
 for i in range(len(m.base_index)):
     print(f'current running basis {i}')
