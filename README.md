@@ -4,8 +4,8 @@
 ###
 In LC-MS dataset, features of fragments are generated from fragmentation process which is the dissociation of energetically unstable molecular ions and is generally not a desired effect.
 As a result, signals from unique features are often confounded with unintentional fragments.
-This algorithm firstly uses non-negative LASSO regression model to generate a basis set which contains linearly independent features (each feature represents a unique group) and then use the generated basis set to decomposed other features since fragment features are often generated from one or multiple precursor ions. 
-Based on coefficients of decomposition results, one feature could be assigned into one or multiple groups. After assigning all the features, each unique group could be regarded as a reconstructed spectrum which could be compared against spectra in databases for best match.
+This algorithm firstly uses non-negative LASSO regression model to generate a basis set which contains linearly independent features (each feature represents a unique group) and then use the generated basis set to decompose other features since fragment features are often generated from one or multiple precursor ions. 
+Based on coefficients of decomposition results, one feature could be assigned to one or multiple groups. After assigning all the features, each unique group could be regarded as a reconstructed spectrum which could be compared against spectra in databases for best match.
 In our algorithm, we compare cosine similarity between two spectra by defining inner product as integral of multiplication of two Gaussian distributions, 
 which could successfully annotate thousands of features including fragments, common adducts, isotopes and dimers in MS1 dataset with the help
 of MassBank of North America (MoNA).
