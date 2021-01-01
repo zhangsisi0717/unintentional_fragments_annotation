@@ -11,8 +11,8 @@ with open('MoNA-export-LC-MS-MS_Negative_Mode.json') as f:  # open the json file
     mona_raw = json.load(f)
 
 mona_spectra = dict()
-temp = []
 for i in tqdm(range(len(mona_raw))):
+    temp = []
     spec_id = mona_raw[i].get('id')
     inchi = mona_raw[i]['compound'][0].get('inchi')
     inchiKey = mona_raw[i]['compound'][0].get('inchiKey')
