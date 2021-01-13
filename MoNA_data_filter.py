@@ -66,5 +66,6 @@ for i in tqdm(range(len(mona_raw))):
             temp.append(('precursor type', pre_type))
     mona_spectra[i] = dict(temp)
 
-with open('file_name.pkl', 'wb') as f:
+with open('mona_neg_cleaned.pkl', 'wb') as f:
     pkl.dump(mona_spectra, f)
+
