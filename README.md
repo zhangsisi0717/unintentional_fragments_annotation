@@ -55,11 +55,12 @@ notes of 'ms_data_workflow.py'.
 ## Output
 The output result will be a list of 'GroupMatchingResult' objects, the length of the list equals to number of different basis groups the algorithm returned.
 
-To check all matched peaks for path 0 of group 3:
+To check all matched peaks for the first matching layer of path 0 of group 3:
 ```python
 #code example
 final_matching_results[3].sum_matched_results_mona[0]['all_matched_peaks']
-
+```
+```python
 #output contains m/z values with corresponding intensities,  length of the output list equals to number of layers of recursive matching
 [[(71.0158167500592, 47969.802360823625),
   (85.0317277974723, 6320.15038865462),
@@ -83,11 +84,12 @@ final_matching_results[3].sum_matched_results_mona[0]['all_matched_peaks']
   (162.051370452295, 4394.284055390238)],
  [(107.037093163663, 9467.584639432278)]]
 ```
-To check candidates for first layer of path 0 of group 0:
+To check candidates for the first matching layer of path 0 of group 0:
 ```python
 #code exmaple
 final_matching_results[0].sum_matched_results_mona[0]['candi_list_each_matching_layer'][0]
-
+```
+```python
 #output is a list of candidates information(candidate compound,spectrum,similarity score)
 [(MonaCompounds(id=1412, name='Creatine'),
   MonaSpectrum(mode='Negative', ms_level='MS2', n_peaks=2, reduced_n_peaks=2, name='Creatine', spectrum_id='PR100534'),
@@ -106,6 +108,40 @@ final_matching_results[0].sum_matched_results_mona[0]['candi_list_each_matching_
   0.9395831669260067),...]
 
 ```
+To check all matched fragments for the first matching layer of path 0 of group 2:
+```python
+#code example
+final_matching_results[2].sum_matched_results_mona[0]['all_matched_adducts'][0]
+```
+```python
+#output is a list dictionaries (keys: matched types, value: matched m/z with corresponding intensity and other info)
+{'matched_multimer': {(239.079984216242,
+   44986.37219446054): ('dimer of frag/precur', (119.037313783605,
+    88633.76032844598)),
+  (299.101285872176, 3234.9339711290318): ('dimer of frag/precur',
+   (149.047991556927, 13860.063281434182)),
+  (359.122282556586, 106491.259941226): ('dimer of frag/precur',
+   (179.058959578171, 439580.0364151183)),
+  (361.127252662079, 3780.5219555158137): ('dimer of frag/precur',
+   (180.06226016142298, 31528.917428339886)),
+  (241.08502111557004, 1051.44200167107): ('dimer of frag/precur',
+   (120.040628388736, 4784.574694971612))},
+ 'matched_isotope_mz': {(90.0301153901944,
+   8713.775531721745): [(89.0266944921628, 248952.3833011955)],
+  (102.029954287965,
+   2340.728504860962): [(101.026740174181, 49280.89213672266)],
+  (114.03005154321501,
+   4009.1582278610213): [(113.026855612246, 70180.12405222801)],
+  (120.040628388736,
+   4784.574694971612): [(119.037313783605, 88633.76032844598)],
+  (132.039424387647,
+   1360.207194000837): [(131.03736927702698, 17388.240020534537)],
+  (162.051370452295,
+   4394.284055390238): [(161.048064401475, 61930.59041665014)]},
+ 'matched_adducts': {}}
+
+```
+
 ## Demo
 ####
 demo data could be found under /demo_data
