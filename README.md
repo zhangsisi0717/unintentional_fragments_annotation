@@ -40,7 +40,7 @@ library('xcms')
 ### step 1: data preparation
 ####
 - Download experimental LC-MS/MS dataset (both positive and negative modes) at https://mona.fiehnlab.ucdavis.edu/downloads
-- Process the .json files using 'MoNA_data_filter.py' file to only extract the needed spectra information
+- Process the .json files using 'MoNA_data_filter.py' file to only extract the needed spectra information and save as 'mona_neg_cleaned.pkl' or 'mona_pos_cleaned.pkl'.
 - Use MS-Convert (http://proteowizard.sourceforge.net/tools.shtml) to convert vendor formatted LC-MS data into .mzML files.
 - In order to detect all the peaks and extract them from .mzML files, run 'generate_features.R' file. 
 This step would output three .txt files (data_ints.txt, data_mzs.txt and data_rts.txt) and one peak_info.csv file. Then put
