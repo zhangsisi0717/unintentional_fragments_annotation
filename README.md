@@ -138,7 +138,7 @@ final_matching_results[2].sum_matched_results_mona[0]['all_matched_adducts'][0]
    1360.207194000837): [(131.03736927702698, 17388.240020534537)],
   (162.051370452295,
    4394.284055390238): [(161.048064401475, 61930.59041665014)]},
- 'matched_adducts': {}}
+ 'matched_adducts': {...}}
 
 ```
 
