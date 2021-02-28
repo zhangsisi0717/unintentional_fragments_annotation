@@ -64,6 +64,12 @@ for i in tqdm(range(len(mona_raw))):
         elif k['name'] == 'precursor type':
             pre_type = k['value']
             temp.append(('precursor type', pre_type))
+
+    if mona_raw[i]['compound'][0]['names']:
+            temp.append(('name',mona_raw[i]['compound'][0]['names'][0]['name']))
+    else:
+        temp.append(('name',None))
+
     mona_spectra[i] = dict(temp)
 
 with open('mona_neg_cleaned.pkl', 'wb') as f:
